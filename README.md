@@ -70,7 +70,7 @@ TaskFlow stores tasks and projects in a local SQLite database. Data is loaded on
 | `?` | Open keyboard help |
 | `q` / `Esc` / `Ctrl+C` | Quit |
 
-Task CRUD and in-memory project organization are implemented. Select Inbox or a project in the Projects panel to filter the task list. Use `Tab` to switch panels; in the Projects panel, `a` adds, `e` renames and `d` deletes a project. Deleting a project moves its tasks to Inbox. In the Tasks panel, `m` cycles a task through the available projects and Inbox. Changes are saved to SQLite automatically. On Linux, the database is stored in the application data directory (normally `~/.local/share/taskflowtui/taskflow.sqlite3`; `$XDG_DATA_HOME` is respected).
+Task CRUD and project organization are implemented. Select Inbox or a project in the Projects panel to filter the task list. Use `Tab` to switch panels; in the Projects panel, `a` adds, `e` renames and `d` deletes a project. Deleting a project moves its tasks to Inbox. In the Tasks panel, `m` cycles a task through the available projects and Inbox. Changes are saved to SQLite automatically. On Linux, the database is stored in the application data directory (normally `~/.local/share/taskflowtui/taskflow.sqlite3`; `$XDG_DATA_HOME` is respected).
 
 ## Development approach
 
@@ -104,13 +104,13 @@ cd taskflowtui
 ## Progress
 
 - [x] Define the product scope and release direction.
-- [ ] Initialize the Rust application.
-- [ ] Implement terminal lifecycle and event loop.
-- [x] Build the first in-memory dashboard with Vim-style navigation.
-- [x] Implement task creation, editing and in-memory project operations.
+- [x] Initialize the Rust application.
+- [x] Implement terminal lifecycle and event loop.
+- [x] Build the dashboard with Vim-style navigation.
+- [x] Implement task creation, editing and project operations.
 - [x] Add SQLite persistence.
 - [ ] Add search, filters and sorting.
-- [ ] Add tests, recovery and user documentation.
+- [ ] Complete recovery testing and release documentation.
 
 ## License
 
