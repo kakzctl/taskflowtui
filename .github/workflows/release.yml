@@ -37,8 +37,8 @@ jobs:
       - name: Verify tag matches package version
         shell: bash
         run: |
-          TAG_VERSION="${GITHUB_REF_NAME#v}"
-          PACKAGE_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -n 1)"
+          TAG_VERSION="\${GITHUB_REF_NAME#v}"
+          PACKAGE_VERSION="$(sed -n 's/^version = "\\(.*\\)"/\\1/p' Cargo.toml | head -n 1)"
           if [ "$TAG_VERSION" != "$PACKAGE_VERSION" ]; then
             echo "Tag version $TAG_VERSION does not match Cargo.toml version $PACKAGE_VERSION"
             exit 1
@@ -53,8 +53,8 @@ jobs:
         run: |
           mkdir -p dist/staging
           cp "target/${{ matrix.target }}/release/taskflowtui" dist/staging/
-          cp README.md dist/staging/
-          ARCHIVE="taskflowtui-${GITHUB_REF_NAME}-${{ matrix.target }}.tar.gz"
+          cp README.md LICENSE-MIT LICENSE-APACHE dist/staging/
+          ARCHIVE="taskflowtui-\${GITHUB_REF_NAME}-${{ matrix.target }}.tar.gz"
           tar -czf "dist/$ARCHIVE" -C dist/staging .
           sha256sum "dist/$ARCHIVE" > "dist/$ARCHIVE.sha256"
 
@@ -64,7 +64,7 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force -Path dist/staging | Out-Null
           Copy-Item "target/${{ matrix.target }}/release/taskflowtui.exe" dist/staging/
-          Copy-Item README.md dist/staging/
+          Copy-Item README.md, LICENSE-MIT, LICENSE-APACHE dist/staging/
           $archive = "taskflowtui-$env:GITHUB_REF_NAME-${{ matrix.target }}.zip"
           Compress-Archive -Path dist/staging/* -DestinationPath "dist/$archive"
           $hash = (Get-FileHash "dist/$archive" -Algorithm SHA256).Hash.ToLower()
@@ -78,9 +78,60 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  linux-packages:
+    name: Build Debian and RPM packages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install stable Rust
+        uses: dtolnay/rust-toolchain@1.99.1
+
+      - name: Cache Cargo files
+        uses: Swatinem/rust-cache@v2
+
+      - name: Verify tag matches package version
+        shell: bash
+        run: |
+          TAG_VERSION="\${GITHUB_REF_NAME#v}"
+          PACKAGE_VERSION="$(sed -n 's/^version = "\\(.*\\)"/\\1/p' Cargo.toml | head -n 1)"
+          test "$TAG_VERSION" = "$PACKAGE_VERSION"
+
+      - name: Build release binary
+        run: cargo build --release --locked
+
+      - name: Install Linux packaging tools
+        run: |
+          cargo install cargo-deb --locked
+          cargo install cargo-generate-rpm --locked
+
+      - name: Build Debian package
+        run: |
+          cargo deb --no-build
+          mkdir -p dist
+          cp target/debian/*.deb dist/
+
+      - name: Build RPM package
+        run: |
+          cargo generate-rpm -o "dist/taskflowtui-\${GITHUB_REF_NAME}.x86_64.rpm"
+
+      - name: Generate checksums
+        run: |
+          cd dist
+          sha256sum *.deb *.rpm > SHA256SUMS
+
+      - name: Upload Linux packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-packages
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 7
+
   publish:
     name: Publish GitHub Release
-    needs: build
+    needs: [build, linux-packages]
     runs-on: ubuntu-latest
     steps:
       - name: Download release packages
