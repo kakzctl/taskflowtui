@@ -1,0 +1,11 @@
+/target/
+
+# Local application data
+*.db
+*.db-shm
+*.db-wal
+
+# Editor and operating-system files
+*.swp
+*.swo
+.DS_Store
