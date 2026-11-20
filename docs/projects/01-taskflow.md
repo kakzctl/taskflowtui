@@ -47,28 +47,26 @@ TaskFlow is intended for real everyday use. It should make capturing, organizing
 
 Cloud synchronization, accounts, collaboration, calendar synchronization, AI features, and web/mobile interfaces.
 
-## Proposed keyboard map
+## Current keyboard map
 
 | Key | Action |
 |---|---|
-| `q` | Quit |
-| `Esc` | Close dialog or cancel current action |
-| `j` / `k`, arrows | Move selection |
-| `a` | Add task |
-| `e` | Edit selected task |
-| `d` | Delete selected task (confirmation required) |
-| `Space` | Toggle completion where appropriate |
-| `/` | Search |
-| `?` | Show help |
-| `Enter` | Open or confirm selection |
+| `q` / `Esc` / `Ctrl+C` | Quit |
+| `j` / `↓` | Move down |
+| `k` / `↑` | Move up |
+| `g` | Select first task |
+| `G` | Select last task |
+| `s` | Cycle selected task status |
+| `p` | Cycle selected task priority |
+| `?` | Show or close keyboard help |
 
-Shortcuts can evolve as the UI is tested.
+Task changes are currently in memory only and are lost when the application exits. More shortcuts will be added as task workflows are implemented.
 
 ## Implementation milestones
 
 1. **Terminal foundation:** Ratatui/Crossterm setup, event loop, quit handling and best-effort cleanup are implemented. Local compilation and manual resize/cleanup verification remain.
-2. **First dashboard:** header, task list, footer, selection and empty state.
-3. **Domain model:** task, status, priority, project and unit tests.
+2. **First dashboard:** header summary, selectable task list, details panel, shortcut footer and sample tasks are implemented. Empty-state polish and manual resize verification remain.
+3. **Domain model:** Task, status and priority types, state cycling and transition unit tests are implemented. Project model and assignment remain.
 4. **SQLite storage:** schema, versioning, repositories, transactions and persistence tests.
 5. **Task workflows:** forms, CRUD, status, priority, dates and project assignment.
 6. **Search and review:** filters, sorting, dashboard counts, upcoming and overdue tasks.
