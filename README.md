@@ -41,6 +41,16 @@ A local-first terminal application for capturing, organizing and tracking everyd
 - AI features.
 - A web or mobile interface.
 
+## Build and run
+
+Requirements: a recent stable Rust toolchain and Cargo.
+
+```bash
+cargo run
+```
+
+Press `q`, `Esc` or `Ctrl+C` to exit the initial screen.
+
 ## Development approach
 
 We will build this in small, testable milestones. Each milestone should leave the application in a working state.
