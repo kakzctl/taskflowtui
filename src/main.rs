@@ -562,12 +562,12 @@ fn run(terminal: &mut AppTerminal, app: &mut App) -> io::Result<()> {
     while !app.should_quit {
         terminal.draw(|frame| render(frame, app))?;
 
-        if event::poll(Duration::from_millis(250))? {
-            if let Event::Key(key) = event::read()? {
-                // Ignore key-repeat/release events; handle each press once.
-                if key.kind == KeyEventKind::Press {
-                    app.handle_key(key.code, key.modifiers);
-                }
+        if event::poll(Duration::from_millis(250))?
+            && let Event::Key(key) = event::read()?
+        {
+            // Ignore key-repeat/release events; handle each press once.
+            if key.kind == KeyEventKind::Press {
+                app.handle_key(key.code, key.modifiers);
             }
         }
     }
