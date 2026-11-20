@@ -61,10 +61,13 @@ The current dashboard uses sample tasks held in memory. Changes are not saved ye
 | `G` | Select the last task |
 | `s` | Cycle the selected task's status |
 | `p` | Cycle the selected task's priority |
+| `a` | Add a task |
+| `e` | Edit selected task |
+| `d` | Request deletion (confirm with `y`, cancel with `n`) |
 | `?` | Open keyboard help |
 | `q` / `Esc` / `Ctrl+C` | Quit |
 
-The dashboard is an early milestone: task creation, editing and SQLite persistence are not implemented yet.
+Task creation, editing and confirmed deletion are now implemented in the task CRUD feature branch. All changes are still held in memory and are lost when the application exits; SQLite persistence is the next milestone.
 
 ## Development approach
 

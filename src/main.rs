@@ -12,10 +12,10 @@ use crossterm::{
 };
 use ratatui::{
     backend::CrosstermBackend,
-    layout::{Constraint, Direction, Layout},
+    layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Wrap},
+    widgets::{Block, Borders, Clear, List, ListItem, ListState, Paragraph, Wrap},
     Terminal,
 };
 use task::{Priority, Task, TaskStatus};
@@ -62,11 +62,85 @@ impl Drop for TerminalGuard {
     }
 }
 
+#[derive(Debug, Clone)]
+struct TaskForm {
+    editing_id: Option<u32>,
+    title: String,
+    description: String,
+    active_field: usize,
+}
+
+impl TaskForm {
+    fn new() -> Self {
+        Self {
+            editing_id: None,
+            title: String::new(),
+            description: String::new(),
+            active_field: 0,
+        }
+    }
+
+    fn from_task(task: &Task) -> Self {
+        Self {
+            editing_id: Some(task.id),
+            title: task.title.clone(),
+            description: task.description.clone(),
+            active_field: 0,
+        }
+    }
+
+    fn active_value_mut(&mut self) -> &mut String {
+        if self.active_field == 0 {
+            &mut self.title
+        } else {
+            &mut self.description
+        }
+    }
+
+    fn handle_key(&mut self, code: KeyCode) -> FormAction {
+        match code {
+            KeyCode::Esc => FormAction::Cancel,
+            KeyCode::Tab | KeyCode::Down | KeyCode::Up => {
+                self.active_field = 1 - self.active_field;
+                FormAction::Continue
+            }
+            KeyCode::Enter => {
+                if self.active_field == 0 {
+                    self.active_field = 1;
+                    FormAction::Continue
+                } else {
+                    FormAction::Save
+                }
+            }
+            KeyCode::Backspace => {
+                self.active_value_mut().pop();
+                FormAction::Continue
+            }
+            KeyCode::Char(character) => {
+                if !character.is_control() {
+                    self.active_value_mut().push(character);
+                }
+                FormAction::Continue
+            }
+            _ => FormAction::Continue,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum FormAction {
+    Continue,
+    Save,
+    Cancel,
+}
+
 struct App {
     tasks: Vec<Task>,
     selected: usize,
     should_quit: bool,
     show_help: bool,
+    form: Option<TaskForm>,
+    confirm_delete: bool,
     status_message: String,
 }
 
@@ -118,6 +192,8 @@ impl App {
             selected: 0,
             should_quit: false,
             show_help: false,
+            form: None,
+            confirm_delete: false,
             status_message: "Dashboard loaded with sample tasks.".to_string(),
         }
     }
@@ -128,13 +204,42 @@ impl App {
             return;
         }
 
+        if let Some(form) = self.form.as_mut() {
+            if code == KeyCode::Char('u') && modifiers.contains(KeyModifiers::CONTROL) {
+                form.active_value_mut().clear();
+                return;
+            }
+
+            match form.handle_key(code) {
+                FormAction::Continue => {}
+                FormAction::Cancel => {
+                    self.form = None;
+                    self.status_message = "Task form cancelled.".to_string();
+                }
+                FormAction::Save => self.save_form(),
+            }
+            return;
+        }
+
+        if self.confirm_delete {
+            match code {
+                KeyCode::Char('y') | KeyCode::Char('Y') => self.delete_selected(),
+                KeyCode::Char('n') | KeyCode::Char('N') | KeyCode::Esc => {
+                    self.confirm_delete = false;
+                    self.status_message = "Deletion cancelled.".to_string();
+                }
+                _ => {}
+            }
+            return;
+        }
+
         if matches!(code, KeyCode::Char('q') | KeyCode::Esc) {
             self.should_quit = true;
             return;
         }
 
         if self.show_help {
-            if matches!(code, KeyCode::Char('?') | KeyCode::Esc) {
+            if code == KeyCode::Char('?') {
                 self.show_help = false;
             }
             return;
@@ -151,6 +256,13 @@ impl App {
                 self.selected = self.tasks.len().saturating_sub(1);
                 self.status_message = "Moved to the last task.".to_string();
             }
+            KeyCode::Char('a') => self.start_create(),
+            KeyCode::Char('e') => self.start_edit(),
+            KeyCode::Char('d') => {
+                if !self.tasks.is_empty() {
+                    self.confirm_delete = true;
+                }
+            }
             KeyCode::Char('s') => self.cycle_selected_status(),
             KeyCode::Char('p') => self.cycle_selected_priority(),
             KeyCode::Char('?') => self.show_help = true,
@@ -166,6 +278,60 @@ impl App {
 
     fn move_selection_up(&mut self) {
         self.selected = self.selected.saturating_sub(1);
+    }
+
+    fn start_create(&mut self) {
+        self.form = Some(TaskForm::new());
+    }
+
+    fn start_edit(&mut self) {
+        if let Some(task) = self.tasks.get(self.selected) {
+            self.form = Some(TaskForm::from_task(task));
+        }
+    }
+
+    fn save_form(&mut self) {
+        let Some(form) = self.form.take() else {
+            return;
+        };
+
+        let title = form.title.trim();
+        if title.is_empty() {
+            self.status_message = "A task title is required.".to_string();
+            self.form = Some(form);
+            return;
+        }
+
+        if let Some(id) = form.editing_id {
+            if let Some(task) = self.tasks.iter_mut().find(|task| task.id == id) {
+                task.title = title.to_string();
+                task.description = form.description.trim().to_string();
+                self.status_message = format!("Updated task #{id}.");
+            }
+        } else {
+            let id = self.tasks.iter().map(|task| task.id).max().unwrap_or(0) + 1;
+            self.tasks.push(Task::new(
+                id,
+                title,
+                form.description.trim(),
+                None,
+                TaskStatus::Todo,
+                Priority::Normal,
+            ));
+            self.selected = self.tasks.len() - 1;
+            self.status_message = format!("Created task #{id}.");
+        }
+    }
+
+    fn delete_selected(&mut self) {
+        if self.selected < self.tasks.len() {
+            let removed = self.tasks.remove(self.selected);
+            if self.selected >= self.tasks.len() && self.selected > 0 {
+                self.selected -= 1;
+            }
+            self.status_message = format!("Deleted task #{}.", removed.id);
+        }
+        self.confirm_delete = false;
     }
 
     fn cycle_selected_status(&mut self) {
@@ -207,8 +373,52 @@ fn run(terminal: &mut AppTerminal, app: &mut App) -> io::Result<()> {
     Ok(())
 }
 
+fn centered_rect(area: Rect, width: u16, height: u16) -> Rect {
+    let vertical = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Length((area.height.saturating_sub(height)) / 2),
+            Constraint::Length(height.min(area.height)),
+            Constraint::Min(0),
+        ])
+        .split(area);
+
+    Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([
+            Constraint::Percentage(50),
+            Constraint::Length(width.min(area.width)),
+            Constraint::Percentage(50),
+        ])
+        .split(vertical[1])[1]
+}
+
 fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
     let area = frame.area();
+
+    if let Some(form) = &app.form {
+        render_task_form(frame, area, form);
+        return;
+    }
+
+    if app.confirm_delete {
+        let popup = centered_rect(area, 52, 7);
+        frame.render_widget(Clear, popup);
+        let message = Paragraph::new(vec![
+            Line::from("Delete the selected task?"),
+            Line::from(""),
+            Line::from(vec![
+                Span::styled("y", Style::default().fg(Color::Red).add_modifier(Modifier::BOLD)),
+                Span::raw(" Confirm    "),
+                Span::styled("n / Esc", Style::default().fg(Color::Cyan)),
+                Span::raw(" Cancel"),
+            ]),
+        ])
+        .block(Block::default().title(" Confirm deletion ").borders(Borders::ALL))
+        .wrap(Wrap { trim: true });
+        frame.render_widget(message, popup);
+        return;
+    }
 
     if app.show_help {
         let help = Paragraph::new(vec![
@@ -217,38 +427,17 @@ fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
                 Style::default().add_modifier(Modifier::BOLD),
             )),
             Line::from(""),
-            Line::from(vec![
-                Span::styled("j / ↓", Style::default().fg(Color::Cyan)),
-                Span::raw("       Move down"),
-            ]),
-            Line::from(vec![
-                Span::styled("k / ↑", Style::default().fg(Color::Cyan)),
-                Span::raw("       Move up"),
-            ]),
-            Line::from(vec![
-                Span::styled("g", Style::default().fg(Color::Cyan)),
-                Span::raw("           Jump to first task"),
-            ]),
-            Line::from(vec![
-                Span::styled("G", Style::default().fg(Color::Cyan)),
-                Span::raw("           Jump to last task"),
-            ]),
-            Line::from(vec![
-                Span::styled("s", Style::default().fg(Color::Cyan)),
-                Span::raw("           Cycle task status"),
-            ]),
-            Line::from(vec![
-                Span::styled("p", Style::default().fg(Color::Cyan)),
-                Span::raw("           Cycle task priority"),
-            ]),
-            Line::from(vec![
-                Span::styled("?", Style::default().fg(Color::Cyan)),
-                Span::raw("           Close this help"),
-            ]),
-            Line::from(vec![
-                Span::styled("q / Esc", Style::default().fg(Color::Cyan)),
-                Span::raw("     Quit TaskFlow"),
-            ]),
+            Line::from("j / ↓       Move down"),
+            Line::from("k / ↑       Move up"),
+            Line::from("g           First task"),
+            Line::from("G           Last task"),
+            Line::from("a           Add task"),
+            Line::from("e           Edit selected task"),
+            Line::from("d           Delete selected task"),
+            Line::from("s           Cycle task status"),
+            Line::from("p           Cycle task priority"),
+            Line::from("?           Close this help"),
+            Line::from("q / Esc     Quit TaskFlow"),
             Line::from(""),
             Line::from("Changes currently live in memory only."),
         ])
@@ -370,7 +559,7 @@ fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
             Line::from(task.description.as_str()),
         ]
     } else {
-        vec![Line::from("No tasks yet.")]
+        vec![Line::from("No tasks yet. Press 'a' to add one.")]
     };
 
     let details = Paragraph::new(details)
@@ -381,10 +570,12 @@ fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
     let footer = Paragraph::new(Line::from(vec![
         Span::styled(" j/k ", Style::default().fg(Color::Cyan)),
         Span::raw("Navigate  "),
-        Span::styled("s ", Style::default().fg(Color::Cyan)),
-        Span::raw("Status  "),
-        Span::styled("p ", Style::default().fg(Color::Cyan)),
-        Span::raw("Priority  "),
+        Span::styled("a ", Style::default().fg(Color::Cyan)),
+        Span::raw("Add  "),
+        Span::styled("e ", Style::default().fg(Color::Cyan)),
+        Span::raw("Edit  "),
+        Span::styled("d ", Style::default().fg(Color::Cyan)),
+        Span::raw("Delete  "),
         Span::styled("? ", Style::default().fg(Color::Cyan)),
         Span::raw("Help  "),
         Span::styled("q ", Style::default().fg(Color::Cyan)),
@@ -394,5 +585,144 @@ fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
 
     frame.render_widget(header, sections[0]);
     frame.render_widget(footer, sections[2]);
+}
 
+fn render_task_form(frame: &mut ratatui::Frame<'_>, area: Rect, form: &TaskForm) {
+    let popup = centered_rect(area, 72, 15);
+    frame.render_widget(Clear, popup);
+
+    let title = if form.editing_id.is_some() {
+        " Edit task "
+    } else {
+        " New task "
+    };
+
+    let title_style = if form.active_field == 0 {
+        Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)
+    } else {
+        Style::default()
+    };
+    let description_style = if form.active_field == 1 {
+        Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)
+    } else {
+        Style::default()
+    };
+
+    let form_layout = Layout::default()
+        .direction(Direction::Vertical)
+        .margin(1)
+        .constraints([
+            Constraint::Length(1),
+            Constraint::Length(3),
+            Constraint::Length(1),
+            Constraint::Length(5),
+            Constraint::Length(1),
+        ])
+        .split(popup);
+
+    let title_label = Paragraph::new("Title *").style(title_style);
+    let title_input = Paragraph::new(form.title.as_str())
+        .style(title_style)
+        .block(Block::default().borders(Borders::ALL));
+    let description_label = Paragraph::new("Description").style(description_style);
+    let description_input = Paragraph::new(form.description.as_str())
+        .style(description_style)
+        .block(Block::default().borders(Borders::ALL));
+    let hints = Paragraph::new("Tab: switch field  Enter: next/save  Ctrl+U: clear field  Esc: cancel");
+
+    frame.render_widget(
+        Block::default().title(title).borders(Borders::ALL),
+        popup,
+    );
+    frame.render_widget(title_label, form_layout[0]);
+    frame.render_widget(title_input, form_layout[1]);
+    frame.render_widget(description_label, form_layout[2]);
+    frame.render_widget(description_input, form_layout[3]);
+    frame.render_widget(hints, form_layout[4]);
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::{App, TaskForm};
+    use crossterm::event::{KeyCode, KeyModifiers};
+    use crate::task::{Priority, TaskStatus};
+
+    #[test]
+    fn create_task_adds_it_to_the_list_and_selects_it() {
+        let mut app = App::new();
+        let original_count = app.tasks.len();
+
+        let mut form = TaskForm::new();
+        form.title = "Write integration tests".to_string();
+        form.description = "Cover task workflows".to_string();
+        app.form = Some(form);
+        app.save_form();
+
+        assert_eq!(app.tasks.len(), original_count + 1);
+        assert_eq!(app.selected, original_count);
+        assert_eq!(app.tasks[app.selected].title, "Write integration tests");
+        assert_eq!(app.tasks[app.selected].description, "Cover task workflows");
+        assert_eq!(app.tasks[app.selected].status, TaskStatus::Todo);
+        assert_eq!(app.tasks[app.selected].priority, Priority::Normal);
+    }
+
+    #[test]
+    fn empty_task_title_is_rejected_without_losing_the_form() {
+        let mut app = App::new();
+        let original_count = app.tasks.len();
+        app.form = Some(TaskForm::new());
+
+        app.save_form();
+
+        assert_eq!(app.tasks.len(), original_count);
+        assert!(app.form.is_some());
+        assert_eq!(app.status_message, "A task title is required.");
+    }
+
+    #[test]
+    fn editing_task_preserves_status_priority_and_project() {
+        let mut app = App::new();
+        let original = app.tasks[0].clone();
+
+        let mut form = TaskForm::from_task(&original);
+        form.title = "Updated title".to_string();
+        form.description = "Updated description".to_string();
+        app.form = Some(form);
+        app.save_form();
+
+        let updated = &app.tasks[0];
+        assert_eq!(updated.title, "Updated title");
+        assert_eq!(updated.description, "Updated description");
+        assert_eq!(updated.status, original.status);
+        assert_eq!(updated.priority, original.priority);
+        assert_eq!(updated.project, original.project);
+    }
+
+    #[test]
+    fn delete_requires_confirmation_and_keeps_selection_valid() {
+        let mut app = App::new();
+        let original_count = app.tasks.len();
+
+        app.handle_key(KeyCode::Char('d'), KeyModifiers::NONE);
+        assert!(app.confirm_delete);
+        assert_eq!(app.tasks.len(), original_count);
+
+        app.handle_key(KeyCode::Char('y'), KeyModifiers::NONE);
+        assert!(!app.confirm_delete);
+        assert_eq!(app.tasks.len(), original_count - 1);
+        assert!(app.selected < app.tasks.len());
+    }
+
+    #[test]
+    fn cancelling_delete_keeps_the_task() {
+        let mut app = App::new();
+        let original_count = app.tasks.len();
+
+        app.handle_key(KeyCode::Char('d'), KeyModifiers::NONE);
+        app.handle_key(KeyCode::Char('n'), KeyModifiers::NONE);
+
+        assert_eq!(app.tasks.len(), original_count);
+        assert!(!app.confirm_delete);
+    }
 }

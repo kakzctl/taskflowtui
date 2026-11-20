@@ -154,12 +154,13 @@ Use foreign keys and database transactions. Project deletion must never silently
 - [ ] Choose a platform-appropriate application data directory.
 
 ### Milestone 5 — Interactive task management
-- [ ] Create and edit forms.
-- [ ] Delete confirmation.
-- [ ] Completion and status changes.
-- [ ] Priority and due-date editing.
+- [x] Create and edit forms for task title and description.
+- [x] Delete confirmation.
+- [x] Completion/status and priority changes.
+- [ ] Due-date editing.
 - [ ] Project creation and assignment.
-- [ ] Validation and useful error messages.
+- [x] Required-title validation and status feedback.
+- [x] Unit tests for create, edit, validation and delete workflows.
 
 ### Milestone 6 — Search and dashboard
 - [ ] Search title and description.
