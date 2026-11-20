@@ -116,11 +116,6 @@ impl TaskForm {
                 self.active_value_mut().pop();
                 FormAction::Continue
             }
-            KeyCode::Char('u') if self.active_field == 0 => {
-                // Ctrl+U is handled by the caller; plain "u" remains text.
-                self.active_value_mut().push('u');
-                FormAction::Continue
-            }
             KeyCode::Char(character) => {
                 if !character.is_control() {
                     self.active_value_mut().push(character);
@@ -644,4 +639,90 @@ fn render_task_form(frame: &mut ratatui::Frame<'_>, area: Rect, form: &TaskForm)
     frame.render_widget(description_label, form_layout[2]);
     frame.render_widget(description_input, form_layout[3]);
     frame.render_widget(hints, form_layout[4]);
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::{App, TaskForm};
+    use crossterm::event::{KeyCode, KeyModifiers};
+    use crate::task::{Priority, TaskStatus};
+
+    #[test]
+    fn create_task_adds_it_to_the_list_and_selects_it() {
+        let mut app = App::new();
+        let original_count = app.tasks.len();
+
+        let mut form = TaskForm::new();
+        form.title = "Write integration tests".to_string();
+        form.description = "Cover task workflows".to_string();
+        app.form = Some(form);
+        app.save_form();
+
+        assert_eq!(app.tasks.len(), original_count + 1);
+        assert_eq!(app.selected, original_count);
+        assert_eq!(app.tasks[app.selected].title, "Write integration tests");
+        assert_eq!(app.tasks[app.selected].description, "Cover task workflows");
+        assert_eq!(app.tasks[app.selected].status, TaskStatus::Todo);
+        assert_eq!(app.tasks[app.selected].priority, Priority::Normal);
+    }
+
+    #[test]
+    fn empty_task_title_is_rejected_without_losing_the_form() {
+        let mut app = App::new();
+        let original_count = app.tasks.len();
+        app.form = Some(TaskForm::new());
+
+        app.save_form();
+
+        assert_eq!(app.tasks.len(), original_count);
+        assert!(app.form.is_some());
+        assert_eq!(app.status_message, "A task title is required.");
+    }
+
+    #[test]
+    fn editing_task_preserves_status_priority_and_project() {
+        let mut app = App::new();
+        let original = app.tasks[0].clone();
+
+        let mut form = TaskForm::from_task(&original);
+        form.title = "Updated title".to_string();
+        form.description = "Updated description".to_string();
+        app.form = Some(form);
+        app.save_form();
+
+        let updated = &app.tasks[0];
+        assert_eq!(updated.title, "Updated title");
+        assert_eq!(updated.description, "Updated description");
+        assert_eq!(updated.status, original.status);
+        assert_eq!(updated.priority, original.priority);
+        assert_eq!(updated.project, original.project);
+    }
+
+    #[test]
+    fn delete_requires_confirmation_and_keeps_selection_valid() {
+        let mut app = App::new();
+        let original_count = app.tasks.len();
+
+        app.handle_key(KeyCode::Char('d'), KeyModifiers::NONE);
+        assert!(app.confirm_delete);
+        assert_eq!(app.tasks.len(), original_count);
+
+        app.handle_key(KeyCode::Char('y'), KeyModifiers::NONE);
+        assert!(!app.confirm_delete);
+        assert_eq!(app.tasks.len(), original_count - 1);
+        assert!(app.selected < app.tasks.len());
+    }
+
+    #[test]
+    fn cancelling_delete_keeps_the_task() {
+        let mut app = App::new();
+        let original_count = app.tasks.len();
+
+        app.handle_key(KeyCode::Char('d'), KeyModifiers::NONE);
+        app.handle_key(KeyCode::Char('n'), KeyModifiers::NONE);
+
+        assert_eq!(app.tasks.len(), original_count);
+        assert!(!app.confirm_delete);
+    }
 }
