@@ -21,6 +21,10 @@ section = "utils"
 priority = "optional"
 depends = "$auto"
 extended-description = "A local-first terminal task manager with keyboard-driven task and project management."
+assets = [
+    ["LICENSE-MIT", "usr/share/doc/taskflowtui/copyright-MIT", "644"],
+    ["LICENSE-APACHE", "usr/share/doc/taskflowtui/copyright-APACHE", "644"],
+]
 
 [package.metadata.generate-rpm]
 assets = [
