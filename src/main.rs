@@ -268,6 +268,14 @@ fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
         ])
         .split(area);
 
+    let total = app.tasks.len();
+    let done = app
+        .tasks
+        .iter()
+        .filter(|task| task.status == TaskStatus::Done)
+        .count();
+    let active = total - done;
+
     let header = Paragraph::new(Line::from(vec![
         Span::styled(" TaskFlow ", Style::default().add_modifier(Modifier::BOLD)),
         Span::raw(format!(
@@ -281,14 +289,6 @@ fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
         .direction(Direction::Horizontal)
         .constraints([Constraint::Percentage(62), Constraint::Percentage(38)])
         .split(sections[1]);
-
-    let total = app.tasks.len();
-    let done = app
-        .tasks
-        .iter()
-        .filter(|task| task.status == TaskStatus::Done)
-        .count();
-    let active = total - done;
 
     let task_items: Vec<ListItem<'_>> = app
         .tasks
