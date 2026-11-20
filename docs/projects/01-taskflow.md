@@ -66,7 +66,7 @@ Shortcuts can evolve as the UI is tested.
 
 ## Implementation milestones
 
-1. **Terminal foundation:** Ratatui/Crossterm setup, event loop, resize and safe cleanup.
+1. **Terminal foundation:** Ratatui/Crossterm setup, event loop, quit handling and best-effort cleanup are implemented. Local compilation and manual resize/cleanup verification remain.
 2. **First dashboard:** header, task list, footer, selection and empty state.
 3. **Domain model:** task, status, priority, project and unit tests.
 4. **SQLite storage:** schema, versioning, repositories, transactions and persistence tests.
