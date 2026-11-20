@@ -59,9 +59,11 @@ Cloud synchronization, accounts, collaboration, calendar synchronization, AI fea
 | `G` | Select last task |
 | `s` | Cycle selected task status |
 | `p` | Cycle selected task priority |
+| `Tab` | Switch focus between Projects and Tasks |
+| `m` | Cycle selected task through projects and Inbox |
 | `?` | Show or close keyboard help |
 
-Task changes are currently in memory only and are lost when the application exits. More shortcuts will be added as task workflows are implemented.
+Use `Tab` to switch focus. In Projects, use `j/k` to select Inbox or a project, `a` to add, `e` to rename and `d` to delete (confirm with `y`). Deleting a project moves its tasks to Inbox. In Tasks, `m` cycles the selected task through the projects and Inbox. Task and project changes are currently in memory only and are lost when the application exits.
 
 ## Current task CRUD controls
 
