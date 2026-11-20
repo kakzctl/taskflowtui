@@ -571,7 +571,7 @@ impl App {
 
 fn main() -> Result<(), Box<dyn Error>> {
     let project_dirs = ProjectDirs::from("com", "kakzctl", "taskflowtui")
-        .ok_or("could not determine the application data directory")?;
+        .ok_or_else(|| io::Error::other("could not determine the application data directory"))?;
     let database_path = project_dirs.data_dir().join("taskflow.sqlite3");
     let mut database = Database::open(&database_path)?;
     let (tasks, projects) = database.load()?;
