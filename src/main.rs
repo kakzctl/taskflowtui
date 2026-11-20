@@ -906,6 +906,12 @@ fn render_project_form(frame: &mut ratatui::Frame<'_>, area: Rect, form: &Projec
     frame.render_widget(Paragraph::new("Project names must be unique."), layout[2]);
 }
 
+#[cfg(test)]
+mod tests {
+    use super::{App, Focus, ProjectForm, TaskForm};
+    use crossterm::event::{KeyCode, KeyModifiers};
+    use crate::task::{Priority, TaskStatus};
+
     #[test]
     fn project_creation_rejects_duplicate_names_case_insensitively() {
         let mut app = App::new();
@@ -956,11 +962,6 @@ fn render_project_form(frame: &mut ratatui::Frame<'_>, area: Rect, form: &Projec
         assert_eq!(app.focus, Focus::Tasks);
     }
 
-#[cfg(test)]
-mod tests {
-    use super::{App, Focus, ProjectForm, TaskForm};
-    use crossterm::event::{KeyCode, KeyModifiers};
-    use crate::task::{Priority, TaskStatus};
 
     #[test]
     fn create_task_adds_it_to_the_list_and_selects_it() {
