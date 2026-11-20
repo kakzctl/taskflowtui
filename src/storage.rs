@@ -253,6 +253,43 @@ mod tests {
     }
 
     #[test]
+    fn data_survives_closing_and_reopening_the_database() {
+        use std::time::{SystemTime, UNIX_EPOCH};
+
+        let unique = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let path = std::env::temp_dir().join(format!(
+            "taskflow-test-{}-{unique}.sqlite3",
+            std::process::id()
+        ));
+
+        {
+            let mut database = Database::open(&path).unwrap();
+            let tasks = vec![Task::new(
+                42,
+                "Persist across restarts",
+                "Stored on disk",
+                None,
+                TaskStatus::InProgress,
+                Priority::High,
+            )];
+            database.save(&tasks, &[]).unwrap();
+        }
+
+        let database = Database::open(&path).unwrap();
+        let (tasks, projects) = database.load().unwrap();
+        assert!(projects.is_empty());
+        assert_eq!(tasks.len(), 1);
+        assert_eq!(tasks[0].id, 42);
+        assert_eq!(tasks[0].title, "Persist across restarts");
+
+        drop(database);
+        std::fs::remove_file(path).unwrap();
+    }
+
+    #[test]
     fn saving_project_deletion_moves_tasks_to_inbox() {
         let mut database = Database::open(Path::new(":memory:")).unwrap();
         let projects = vec![Project::new(1, "Work")];
