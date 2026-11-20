@@ -1,7 +1,4 @@
-use std::{
-    collections::HashMap,
-    path::Path,
-};
+use std::{collections::HashMap, path::Path};
 
 use rusqlite::{Connection, TransactionBehavior, params};
 
@@ -19,7 +16,9 @@ impl Database {
     /// Open a database and apply any required schema migrations.
     pub fn open(path: &Path) -> rusqlite::Result<Self> {
         if path != Path::new(":memory:")
-            && let Some(parent) = path.parent().filter(|parent| !parent.as_os_str().is_empty())
+            && let Some(parent) = path
+                .parent()
+                .filter(|parent| !parent.as_os_str().is_empty())
         {
             std::fs::create_dir_all(parent)
                 .map_err(|_| rusqlite::Error::InvalidPath(parent.to_path_buf()))?;
@@ -34,8 +33,7 @@ impl Database {
     }
 
     fn migrate(connection: &mut Connection) -> rusqlite::Result<()> {
-        let version: i64 =
-            connection.pragma_query_value(None, "user_version", |row| row.get(0))?;
+        let version: i64 = connection.pragma_query_value(None, "user_version", |row| row.get(0))?;
 
         if version > 1 {
             return Err(rusqlite::Error::InvalidQuery);
@@ -76,8 +74,9 @@ impl Database {
 
     /// Load projects and tasks, preserving their stable IDs.
     pub fn load(&self) -> rusqlite::Result<(Vec<Task>, Vec<Project>)> {
-        let mut project_statement =
-            self.connection.prepare("SELECT id, name FROM projects ORDER BY id")?;
+        let mut project_statement = self
+            .connection
+            .prepare("SELECT id, name FROM projects ORDER BY id")?;
         let projects = project_statement
             .query_map([], |row| {
                 let id: i64 = row.get(0)?;
@@ -119,8 +118,9 @@ impl Database {
     /// The transaction ensures an interrupted save cannot leave a partially-written
     /// collection of tasks and projects.
     pub fn save(&mut self, tasks: &[Task], projects: &[Project]) -> rusqlite::Result<()> {
-        let transaction =
-            self.connection.transaction_with_behavior(TransactionBehavior::Immediate)?;
+        let transaction = self
+            .connection
+            .transaction_with_behavior(TransactionBehavior::Immediate)?;
 
         transaction.execute("DELETE FROM tasks", [])?;
         transaction.execute("DELETE FROM projects", [])?;
@@ -167,8 +167,7 @@ impl Database {
 }
 
 fn to_u32(value: i64) -> rusqlite::Result<u32> {
-    u32::try_from(value)
-        .map_err(|_| rusqlite::Error::IntegralValueOutOfRange(0, value))
+    u32::try_from(value).map_err(|_| rusqlite::Error::IntegralValueOutOfRange(0, value))
 }
 
 fn parse_status(value: &str) -> rusqlite::Result<TaskStatus> {

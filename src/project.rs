@@ -7,7 +7,10 @@ pub struct Project {
 
 impl Project {
     pub fn new(id: u32, name: impl Into<String>) -> Self {
-        Self { id, name: name.into() }
+        Self {
+            id,
+            name: name.into(),
+        }
     }
 }
 
