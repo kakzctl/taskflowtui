@@ -18,11 +18,11 @@ pub struct Database {
 impl Database {
     /// Open a database and apply any required schema migrations.
     pub fn open(path: &Path) -> rusqlite::Result<Self> {
-        if path != Path::new(":memory:") {
-            if let Some(parent) = path.parent().filter(|parent| !parent.as_os_str().is_empty()) {
-                std::fs::create_dir_all(parent)
-                    .map_err(|_| rusqlite::Error::InvalidPath(parent.to_path_buf()))?;
-            }
+        if path != Path::new(":memory:")
+            && let Some(parent) = path.parent().filter(|parent| !parent.as_os_str().is_empty())
+        {
+            std::fs::create_dir_all(parent)
+                .map_err(|_| rusqlite::Error::InvalidPath(parent.to_path_buf()))?;
         }
 
         let mut connection = Connection::open(path)?;
