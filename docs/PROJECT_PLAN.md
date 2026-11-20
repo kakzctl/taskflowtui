@@ -1,162 +1,160 @@
-# TaskFlowTUI — Full Project Plan
+# TaskFlowTUI — Project Plan
 
-## 1. Vision
+## 1. Project vision
 
-Build a portfolio of 12 practical Rust terminal applications with Ratatui. The series is both a structured learning path and a collection of useful, independently runnable tools.
+Build a reliable, keyboard-driven terminal task manager using Rust, Ratatui and Crossterm.
 
-The work progresses from basic terminal rendering and event handling to asynchronous tasks, operating-system integration, databases, networking and larger application architecture.
+This repository is dedicated exclusively to TaskFlow. Every other application in the wider learning journey will have its own separate GitHub repository.
 
 ## 2. Learning outcomes
 
-By the end of the series, practice and demonstrate:
+Through TaskFlow, practice:
 
-- Rust ownership, borrowing, enums, traits, generics and error handling.
+- Rust ownership, borrowing, structs, enums and error handling.
 - Ratatui layouts, widgets, styling and rendering.
-- Crossterm terminal events, raw mode and terminal restoration.
-- Application state modelling and event-driven architecture.
-- Filesystem operations, serialization and persistence.
-- Async tasks and safe communication between background work and the UI.
-- Process execution and integration with external tools.
-- Unit testing, integration testing, profiling and documentation.
-- Git branching, focused commits and repository maintenance.
+- Crossterm keyboard events, raw mode and terminal restoration.
+- Application state and event-loop design.
+- Separating UI rendering from business logic.
+- JSON serialization and local file persistence.
+- Unit testing, integration testing and documentation.
+- Focused Git commits and repository maintenance.
 
-## 3. Project sequence
+## 3. Scope and features
 
-### Phase A — Beginner
+### Core features
 
-#### 01. TaskFlow — TUI task manager
-
-**Purpose:** Build a keyboard-driven task manager and learn the core Ratatui application pattern.
-
-Features:
-- List tasks in a selectable table or list.
-- Add, edit and delete tasks.
+- Display tasks in a selectable list or table.
+- Add tasks with input validation.
+- Edit and delete existing tasks.
 - Mark tasks complete or active.
-- Assign priority and optional due date.
+- Assign task priorities.
 - Search and filter tasks.
-- Persist tasks locally as JSON.
-- Show helpful empty states, validation messages and status feedback.
+- Persist tasks locally in JSON.
+- Display status messages and keyboard help.
 
-Learning topics: terminal lifecycle, event loop, layouts, widgets, state, structs/enums, CRUD, serde and file I/O.
+### Non-goals for the first version
 
-Acceptance criteria:
-- [ ] App launches and exits without leaving the terminal in raw mode.
-- [ ] User can navigate tasks using the keyboard.
-- [ ] Create, edit, delete and completion actions work.
-- [ ] Data survives application restarts.
-- [ ] Invalid input and storage errors are handled.
-- [ ] Core task logic has unit tests.
-- [ ] README documents installation, usage and key bindings.
+- Cloud synchronization.
+- Multi-user collaboration.
+- Network services or accounts.
+- A complex plugin system.
 
-Suggested modules: `app`, `event`, `ui`, `models/task`, `storage`.
+These can be reconsidered after the local application is stable.
 
-#### 02. TermNotes — Terminal notes
+## 4. Implementation milestones
 
-Features: create, edit, view, delete, search and tag notes; persist notes locally; provide a readable editor/viewer split.
+### Milestone 1 — Terminal foundation
 
-Learning topics: text input, editor state, text wrapping, search, serialization and file storage.
+- [ ] Create the Rust binary crate.
+- [ ] Add Ratatui and Crossterm.
+- [ ] Initialize the terminal and enter raw mode.
+- [ ] Create the draw/event loop.
+- [ ] Handle quit and terminal resize events.
+- [ ] Restore terminal state safely on exit and errors.
 
-#### 03. File Explorer
+### Milestone 2 — First interface
 
-Features: browse directories, move between parent/child directories, inspect metadata, sort and filter entries, and show a preview for supported text files.
+- [ ] Create header, task area and footer.
+- [ ] Render sample tasks.
+- [ ] Add selected-row styling.
+- [ ] Show keyboard shortcuts.
+- [ ] Handle empty task lists.
 
-Learning topics: filesystem APIs, paths, permissions, error handling and navigation state.
+### Milestone 3 — Task model and state
 
-#### 04. FocusTimer
+- [ ] Define Task and Priority types.
+- [ ] Track selected task.
+- [ ] Implement navigation.
+- [ ] Implement task creation, editing and deletion in the domain layer.
+- [ ] Implement completion state changes.
+- [ ] Add unit tests for task operations.
 
-Features: configurable focus and break sessions, start/pause/reset, session history and progress display.
+### Milestone 4 — Interactive forms
 
-Learning topics: time handling, tick events, state transitions and redraw efficiency.
+- [ ] Add task form.
+- [ ] Add edit form.
+- [ ] Validate user input.
+- [ ] Show clear validation and status messages.
+- [ ] Confirm deletion before removing a task.
 
-### Phase B — Intermediate
+### Milestone 5 — Search and filters
 
-#### 05. SysScope — System monitor
+- [ ] Search by task title.
+- [ ] Filter active and completed tasks.
+- [ ] Filter or sort by priority.
+- [ ] Keep selection valid when filtered results change.
 
-Features: CPU, memory, disk and uptime summaries; process list; periodic refresh; selectable views.
+### Milestone 6 — Persistence
 
-Learning topics: system information APIs, background refresh, channels, charts and resource management.
+- [ ] Choose a suitable local data directory.
+- [ ] Load tasks on startup.
+- [ ] Save changes safely.
+- [ ] Handle missing, malformed or inaccessible data.
+- [ ] Test persistence across application restarts.
 
-#### 06. Git Dashboard
+### Milestone 7 — Quality and release
 
-Features: inspect repository status, branches, recent commits and changed files; provide safe, explicit actions for common Git operations.
+- [ ] Add unit and integration tests.
+- [ ] Run formatting, Clippy and tests.
+- [ ] Test keyboard behavior and terminal restoration.
+- [ ] Test empty states and invalid input.
+- [ ] Document installation, usage and shortcuts.
+- [ ] Tag or document the first usable release.
 
-Learning topics: subprocesses, command output, exit codes, asynchronous command execution and Git concepts.
+## 5. Suggested architecture
 
-#### 07. Download Manager
+Introduce modules gradually as they become necessary:
 
-Features: add HTTP/HTTPS downloads, queue and pause/resume where supported, progress display, destination selection and history.
+```text
+src/
+├── main.rs
+├── app.rs
+├── event.rs
+├── storage.rs
+├── models/
+│   ├── mod.rs
+│   └── task.rs
+└── ui/
+    ├── mod.rs
+    ├── layout.rs
+    └── tasks.rs
+```
 
-Learning topics: async Rust, HTTP clients, streaming, cancellation, concurrency and partial-file handling.
+Responsibilities:
 
-#### 08. Database Explorer
+- `main.rs`: startup, terminal lifecycle and application entry point.
+- `app.rs`: application state and actions.
+- `event.rs`: keyboard and terminal events.
+- `models/task.rs`: task data and domain behavior.
+- `storage.rs`: JSON loading and saving.
+- `ui/`: rendering only; avoid embedding task business logic in widgets.
 
-Features: open SQLite databases, list tables, inspect schema, run read queries and render paginated results.
+## 6. Dependencies
 
-Learning topics: SQL, database connections, parameterized queries, result modelling and safe query handling.
+Start with only what the first milestones require:
 
-### Phase C — Advanced
+- `ratatui`: terminal UI rendering.
+- `crossterm`: terminal events and backend.
+- `serde` with derive: serialization support.
+- `serde_json`: JSON persistence.
 
-#### 09. Container Manager
+Add an error-handling crate only when its benefits are clear. Avoid dependencies that do not serve a concrete requirement.
 
-Features: list containers and images, inspect status, view logs and manage container lifecycle with confirmation for destructive actions.
-
-Learning topics: Docker Engine/API integration, subprocesses or API clients, streaming logs and robust error reporting.
-
-#### 10. NetScope — Network monitor
-
-Features: show interfaces, addresses and traffic counters; refresh metrics; display connection information where supported.
-
-Learning topics: platform APIs, network data, sampling intervals and portability boundaries.
-
-#### 11. DevCenter — Developer command center
-
-Features: project shortcuts, Git summaries, task list, system overview and configurable developer commands in one interface.
-
-Learning topics: composing modules, configuration, plugin-like command definitions and application architecture.
-
-#### 12. SmartFind — Fast file search
-
-Features: search selected directories, fuzzy matching, filters, previews, ignore rules and keyboard-driven result navigation.
-
-Learning topics: traversal, indexing, matching algorithms, concurrency, caching and benchmarking.
-
-## 4. Standard project workflow
-
-Each project follows the same lifecycle:
-
-1. **Plan:** define user stories, scope, non-goals and acceptance criteria.
-2. **Design:** sketch screens, keyboard map, state transitions and module boundaries.
-3. **Scaffold:** create the Cargo package, dependencies and initial README.
-4. **Foundation:** terminal lifecycle, event handling and render loop.
-5. **Core functionality:** implement domain logic before connecting it to widgets.
-6. **Persistence/integration:** add storage or external system integration.
-7. **Polish:** empty states, validation, errors, help screen and accessibility.
-8. **Verify:** format, lint, test and manually exercise the application.
-9. **Document:** installation, usage, shortcuts, architecture and limitations.
-10. **Publish:** commit the finished milestone to GitHub and update progress.
-
-We will work incrementally. Do not generate all 12 applications in one batch; each should be implemented, run and reviewed before moving on.
-
-## 5. GitHub repository strategy
+## 7. GitHub workflow
 
 Repository: https://github.com/kakzctl/taskflowtui
 
-- Keep all project source code in this repository.
-- Use one directory per application under `projects/`.
-- Give each project its own Cargo manifest and README.
-- Keep project-specific tests beside the project.
-- Use focused commits, for example:
-  - `docs: add TaskFlow project plan`
-  - `feat(taskflow): add terminal event loop`
-  - `feat(taskflow): render task list`
-  - `test(taskflow): cover task state transitions`
-- Push completed milestones to the default branch, or use feature branches when a change is large.
-- Do not commit `target/`, secrets, local configuration or generated runtime data.
-- Keep the root README roadmap and progress checklist current.
+All TaskFlow source code, tests, documentation and configuration belong here. Other projects must use their own repositories.
 
-## 6. Quality gates
+Use focused commits, for example:
 
-Before marking a milestone complete:
+- `docs: add TaskFlow implementation plan`
+- `feat: initialize terminal event loop`
+- `feat: render task list`
+- `feat: add task creation`
+- `test: cover task state transitions`
+
+Before completing a milestone, run:
 
 ```bash
 cargo fmt --check
@@ -165,34 +163,15 @@ cargo test
 cargo build
 ```
 
-Also perform a manual terminal test for keyboard navigation, resizing, empty data, invalid input, errors and clean exit. Add platform-specific checks when a feature depends on Linux or another operating system.
+Never commit credentials, tokens, personal data, local runtime data or the Cargo `target/` directory.
 
-## 7. Initial repository structure
+## 8. Definition of done
 
-```text
-taskflowtui/
-├── README.md
-├── docs/
-│   ├── PROJECT_PLAN.md
-│   └── projects/
-│       └── 01-taskflow.md
-├── projects/
-│   └── 01-taskflow/
-│       ├── Cargo.toml
-│       ├── README.md
-│       ├── src/
-│       └── tests/
-└── .github/
-    └── workflows/
-```
+TaskFlow is complete when:
 
-The project directories will be added as each project begins. This avoids empty placeholders and keeps every committed milestone meaningful.
-
-## 8. Current status
-
-- [x] Confirm GitHub repository and default branch.
-- [x] Define the 12-project roadmap.
-- [x] Define development workflow and quality gates.
-- [ ] Begin Project 01 — TaskFlow.
-- [ ] Complete and verify TaskFlow.
-- [ ] Continue through Projects 02–12.
+- All agreed core features work.
+- The application restores the terminal on exit.
+- Tasks persist across restarts.
+- Invalid input and storage errors are handled.
+- Tests pass and Clippy/format checks are clean.
+- The README documents installation, usage and key bindings.
