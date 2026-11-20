@@ -1,160 +1,220 @@
-# TaskFlowTUI — Project Plan
+# TaskFlowTUI — Product and Engineering Plan
 
-## 1. Project vision
+## 1. Product vision
 
-Build a reliable, keyboard-driven terminal task manager using Rust, Ratatui and Crossterm.
+TaskFlowTUI is a local-first, keyboard-driven task manager for everyday use, built with Rust and Ratatui.
 
-This repository is dedicated exclusively to TaskFlow. Every other application in the wider learning journey will have its own separate GitHub repository.
+This is a practical application, not merely a tutorial demo. It should be dependable, easy to operate, protective of user data and maintainable as features grow.
 
-## 2. Learning outcomes
+This repository contains TaskFlow only. Every other application in the wider Ratatui learning journey will have its own separate GitHub repository.
 
-Through TaskFlow, practice:
+## 2. Target use
 
-- Rust ownership, borrowing, structs, enums and error handling.
-- Ratatui layouts, widgets, styling and rendering.
-- Crossterm keyboard events, raw mode and terminal restoration.
-- Application state and event-loop design.
-- Separating UI rendering from business logic.
-- JSON serialization and local file persistence.
-- Unit testing, integration testing and documentation.
-- Focused Git commits and repository maintenance.
+A single user should be able to:
 
-## 3. Scope and features
+- Capture a task quickly without navigating complex menus.
+- Organize tasks into projects or leave them in an Inbox.
+- Set priorities and due dates.
+- See what is due, overdue and completed.
+- Search, filter and sort tasks.
+- Close and reopen the application without losing data.
 
-### Core features
+The initial target platform is Linux. Keep platform-specific behavior isolated where practical.
 
-- Display tasks in a selectable list or table.
-- Add tasks with input validation.
-- Edit and delete existing tasks.
-- Mark tasks complete or active.
-- Assign task priorities.
-- Search and filter tasks.
-- Persist tasks locally in JSON.
-- Display status messages and keyboard help.
+## 3. Release scope
 
-### Non-goals for the first version
+### Release 1 — Core task manager
 
-- Cloud synchronization.
-- Multi-user collaboration.
-- Network services or accounts.
-- A complex plugin system.
+**Task management**
+- Create, view, edit and delete tasks.
+- Mark tasks Todo, In Progress or Done.
+- Set Low, Normal, High or Urgent priority.
+- Add an optional due date and description.
+- Track created and updated timestamps.
 
-These can be reconsidered after the local application is stable.
+**Organization**
+- Create, rename and delete projects.
+- Assign a task to a project or leave it in the Inbox.
+- Prevent accidental loss of tasks when a project is deleted; ask how to handle its tasks or move them to Inbox.
 
-## 4. Implementation milestones
+**Finding and reviewing**
+- Search task titles and descriptions.
+- Filter by status, priority and project.
+- Sort by priority, due date and creation date.
+- Dashboard counts for total, active and completed tasks.
+- Show upcoming and overdue tasks.
+
+**Usability and reliability**
+- Keyboard-first navigation and discoverable shortcuts.
+- Clear validation, confirmation and status messages.
+- Useful empty states.
+- Local SQLite persistence.
+- Graceful handling of database errors and interrupted operations.
+- Tests for domain logic and persistence.
+
+### Release 2 — Productivity
+
+- Tags and categories.
+- Today and Upcoming views.
+- Recurring tasks.
+- Bulk operations.
+- Undo for supported accidental actions.
+- JSON/CSV export and import.
+- Backup and restore.
+- Configurable data directory and preferences.
+
+### Release 3 — Advanced
+
+- Subtasks and task dependencies.
+- Task history and activity tracking.
+- Configurable keyboard shortcuts.
+- Themes and date/time formats.
+- Optional external integrations, only when there is a clear use case.
+
+## 4. Non-goals for Release 1
+
+- Accounts, authentication or multi-user collaboration.
+- Cloud synchronization or hosted backend.
+- Calendar synchronization.
+- AI features.
+- Web or mobile interface.
+- Complex plugin architecture.
+
+These are deliberately excluded so the first release can be finished, tested and trusted.
+
+## 5. Data model
+
+Use SQLite as the source of truth.
+
+### Project
+- Integer primary key.
+- Name (required, unique).
+- Optional description.
+- Created and updated timestamps.
+
+### Task
+- Integer primary key.
+- Title (required).
+- Optional description.
+- Status: Todo, In Progress or Done.
+- Priority: Low, Normal, High or Urgent.
+- Optional due date.
+- Optional project foreign key; NULL means Inbox.
+- Created and updated timestamps.
+
+### Tag and TaskTag
+The schema can accommodate tags later, but tag management is not required for Release 1. Avoid implementing unused features prematurely.
+
+Use foreign keys and database transactions. Project deletion must never silently delete a user's tasks.
+
+## 6. Engineering requirements
+
+- Stable Rust.
+- Ratatui for rendering and Crossterm for terminal interaction.
+- SQLite for durable local storage.
+- Keep UI rendering, application state, domain logic and storage separate.
+- Validate input before writing to storage.
+- Use parameterized SQL queries.
+- Handle database failures visibly; never pretend a write succeeded.
+- Keep schema changes versioned through migrations or a controlled schema-version mechanism.
+- Test task transitions, project assignment, filtering and persistence.
+- Avoid unnecessary dependencies.
+
+## 7. Implementation milestones
 
 ### Milestone 1 — Terminal foundation
-
 - [ ] Create the Rust binary crate.
 - [ ] Add Ratatui and Crossterm.
-- [ ] Initialize the terminal and enter raw mode.
-- [ ] Create the draw/event loop.
-- [ ] Handle quit and terminal resize events.
-- [ ] Restore terminal state safely on exit and errors.
+- [ ] Initialize raw mode and alternate screen.
+- [ ] Implement the draw/event loop.
+- [ ] Handle quit and terminal resize.
+- [ ] Restore terminal state on errors and normal exit.
 
-### Milestone 2 — First interface
+### Milestone 2 — First dashboard
+- [ ] Header with application name and summary.
+- [ ] Main task list with selection.
+- [ ] Footer with keyboard shortcuts.
+- [ ] Sample in-memory tasks initially.
+- [ ] Empty state and resize handling.
 
-- [ ] Create header, task area and footer.
-- [ ] Render sample tasks.
-- [ ] Add selected-row styling.
-- [ ] Show keyboard shortcuts.
-- [ ] Handle empty task lists.
+### Milestone 3 — Domain model
+- [ ] Define Task, TaskStatus and Priority.
+- [ ] Define Project.
+- [ ] Implement task state transitions.
+- [ ] Implement project assignment and Inbox behavior.
+- [ ] Add unit tests independent of the UI.
 
-### Milestone 3 — Task model and state
+### Milestone 4 — SQLite storage
+- [ ] Add SQLite connection and schema initialization.
+- [ ] Add schema versioning.
+- [ ] Implement task and project repositories.
+- [ ] Use parameterized queries and transactions.
+- [ ] Test create/read/update/delete and restart persistence.
+- [ ] Choose a platform-appropriate application data directory.
 
-- [ ] Define Task and Priority types.
-- [ ] Track selected task.
-- [ ] Implement navigation.
-- [ ] Implement task creation, editing and deletion in the domain layer.
-- [ ] Implement completion state changes.
-- [ ] Add unit tests for task operations.
+### Milestone 5 — Interactive task management
+- [ ] Create and edit forms.
+- [ ] Delete confirmation.
+- [ ] Completion and status changes.
+- [ ] Priority and due-date editing.
+- [ ] Project creation and assignment.
+- [ ] Validation and useful error messages.
 
-### Milestone 4 — Interactive forms
+### Milestone 6 — Search and dashboard
+- [ ] Search title and description.
+- [ ] Status, priority and project filters.
+- [ ] Sorting.
+- [ ] Dashboard counts.
+- [ ] Upcoming and overdue views.
 
-- [ ] Add task form.
-- [ ] Add edit form.
-- [ ] Validate user input.
-- [ ] Show clear validation and status messages.
-- [ ] Confirm deletion before removing a task.
+### Milestone 7 — Release readiness
+- [ ] Test empty, large and malformed-data scenarios.
+- [ ] Verify no operation silently loses user data.
+- [ ] Test terminal restoration on exit and errors.
+- [ ] Run formatting, Clippy and all tests.
+- [ ] Document installation, usage, shortcuts and data location.
+- [ ] Prepare backup guidance and a first usable release.
 
-### Milestone 5 — Search and filters
+## 8. Suggested architecture
 
-- [ ] Search by task title.
-- [ ] Filter active and completed tasks.
-- [ ] Filter or sort by priority.
-- [ ] Keep selection valid when filtered results change.
-
-### Milestone 6 — Persistence
-
-- [ ] Choose a suitable local data directory.
-- [ ] Load tasks on startup.
-- [ ] Save changes safely.
-- [ ] Handle missing, malformed or inaccessible data.
-- [ ] Test persistence across application restarts.
-
-### Milestone 7 — Quality and release
-
-- [ ] Add unit and integration tests.
-- [ ] Run formatting, Clippy and tests.
-- [ ] Test keyboard behavior and terminal restoration.
-- [ ] Test empty states and invalid input.
-- [ ] Document installation, usage and shortcuts.
-- [ ] Tag or document the first usable release.
-
-## 5. Suggested architecture
-
-Introduce modules gradually as they become necessary:
+Introduce modules as they are needed; do not create empty files in advance.
 
 ```text
 src/
 ├── main.rs
 ├── app.rs
 ├── event.rs
-├── storage.rs
 ├── models/
 │   ├── mod.rs
-│   └── task.rs
+│   ├── task.rs
+│   └── project.rs
+├── storage/
+│   ├── mod.rs
+│   ├── database.rs
+│   ├── tasks.rs
+│   └── projects.rs
 └── ui/
     ├── mod.rs
     ├── layout.rs
+    ├── dashboard.rs
     └── tasks.rs
 ```
 
-Responsibilities:
-
-- `main.rs`: startup, terminal lifecycle and application entry point.
-- `app.rs`: application state and actions.
-- `event.rs`: keyboard and terminal events.
-- `models/task.rs`: task data and domain behavior.
-- `storage.rs`: JSON loading and saving.
-- `ui/`: rendering only; avoid embedding task business logic in widgets.
-
-## 6. Dependencies
-
-Start with only what the first milestones require:
-
-- `ratatui`: terminal UI rendering.
-- `crossterm`: terminal events and backend.
-- `serde` with derive: serialization support.
-- `serde_json`: JSON persistence.
-
-Add an error-handling crate only when its benefits are clear. Avoid dependencies that do not serve a concrete requirement.
-
-## 7. GitHub workflow
+## 9. GitHub and quality workflow
 
 Repository: https://github.com/kakzctl/taskflowtui
 
-All TaskFlow source code, tests, documentation and configuration belong here. Other projects must use their own repositories.
+All TaskFlow source, tests and documentation belong here. Other projects use separate repositories.
 
 Use focused commits, for example:
 
-- `docs: add TaskFlow implementation plan`
 - `feat: initialize terminal event loop`
-- `feat: render task list`
-- `feat: add task creation`
-- `test: cover task state transitions`
+- `feat: render task dashboard`
+- `feat: add task domain model`
+- `feat: add SQLite persistence`
+- `test: cover task repository operations`
 
-Before completing a milestone, run:
+Before completing milestones:
 
 ```bash
 cargo fmt --check
@@ -163,15 +223,8 @@ cargo test
 cargo build
 ```
 
-Never commit credentials, tokens, personal data, local runtime data or the Cargo `target/` directory.
+Never commit the local database, user data, secrets or Cargo `target/` output.
 
-## 8. Definition of done
+## 10. Definition of done
 
-TaskFlow is complete when:
-
-- All agreed core features work.
-- The application restores the terminal on exit.
-- Tasks persist across restarts.
-- Invalid input and storage errors are handled.
-- Tests pass and Clippy/format checks are clean.
-- The README documents installation, usage and key bindings.
+Release 1 is usable when the user can manage tasks and projects end-to-end, data persists across restarts, search and filters work, errors are handled honestly, tests pass, and the terminal is restored correctly after exit.
