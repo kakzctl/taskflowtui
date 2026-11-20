@@ -1,0 +1,29 @@
+name: Publish to crates.io
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_publish:
+        description: "Confirm that this version is ready for public publication"
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    if: inputs.confirm_publish == true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Validate package
+        run: cargo publish --dry-run --locked
+      - name: Publish package
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          test -n "$CARGO_REGISTRY_TOKEN"
+          cargo publish --locked
