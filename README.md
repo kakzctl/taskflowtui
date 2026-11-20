@@ -1,82 +1,85 @@
 # TaskFlowTUI
 
-A keyboard-driven terminal task manager built with Rust and Ratatui.
+A practical, keyboard-driven task manager built with Rust and Ratatui.
 
 **Repository:** https://github.com/kakzctl/taskflowtui
 
 ## Scope
 
-This repository is dedicated to **TaskFlow only**. It will contain TaskFlow's complete source code, tests, documentation, configuration and Git history.
+This repository is dedicated to **TaskFlow only**. Every other application in the wider Ratatui learning journey will have its own separate GitHub repository.
 
-Other applications in the wider Ratatui learning journey will each have their own separate GitHub repository. They will not be added to this repository.
+TaskFlow is intended to become a tool used for real everyday work, not just a tutorial exercise. Reliability, data safety, usability and maintainability are core requirements.
 
-## Goals
+## Product vision
 
-- Build a practical, keyboard-driven terminal task manager.
-- Learn idiomatic, modular and maintainable Rust.
-- Use Ratatui for rendering and Crossterm for terminal interaction.
-- Separate application state, event handling, UI rendering, task models and persistence.
-- Add tests, error handling and documentation as the application grows.
+A local-first terminal application for capturing, organizing and tracking everyday tasks. It should be fast to operate from the keyboard, useful without an internet connection, and dependable enough to use as a daily task manager.
 
-## Planned features
+## Release 1 — Core task manager
 
-- Display tasks in a selectable list or table.
-- Add, edit and delete tasks.
-- Mark tasks complete or active.
-- Assign priorities and optional due dates.
-- Search and filter tasks.
-- Save and load tasks locally as JSON.
-- Provide keyboard shortcuts and helpful status messages.
+- Create, view, edit and delete tasks.
+- Mark tasks as Todo, In Progress or Done.
+- Assign Low, Normal, High or Urgent priority.
+- Set optional due dates.
+- Organize tasks into projects, with an Inbox for unassigned tasks.
+- Search tasks and filter by status, priority and project.
+- Sort by priority, due date or creation date.
+- Show dashboard counts and upcoming/overdue tasks.
+- Persist data locally in SQLite.
+- Provide keyboard help, input validation and clear status/error messages.
 
-See [the detailed project plan](docs/PROJECT_PLAN.md) and [implementation milestones](docs/projects/01-taskflow.md).
+## Later releases
 
-## Development workflow
+**Release 2:** tags, recurring tasks, Today/Upcoming views, bulk actions, import/export, backup/restore and undo.
 
-We will build the application in small, reviewable milestones:
+**Release 3:** subtasks, dependencies, task history, configurable shortcuts, themes and optional integrations.
 
-1. Define requirements and acceptance criteria.
-2. Design the application flow and module structure.
-3. Set up the Rust project and dependencies.
-4. Implement one feature at a time.
-5. Run formatting, tests and relevant checks.
-6. Document usage, shortcuts and design decisions.
-7. Commit completed milestones to this repository.
+## Explicit non-goals for the initial release
 
-### Clone
+- User accounts or multi-user collaboration.
+- Cloud synchronization or a hosted service.
+- Calendar synchronization.
+- AI features.
+- A web or mobile interface.
+
+## Development approach
+
+We will build this in small, testable milestones. Each milestone should leave the application in a working state.
+
+1. Establish the Rust project and terminal lifecycle.
+2. Build the first usable dashboard.
+3. Implement task and project domain logic.
+4. Add SQLite persistence.
+5. Add search, filters and sorting.
+6. Add validation, recovery and tests.
+7. Polish documentation and prepare a usable release.
+
+## Clone
 
 ```bash
 git clone https://github.com/kakzctl/taskflowtui.git
 cd taskflowtui
 ```
 
-## Development standards
+## Quality standards
 
-- Use stable Rust unless there is a documented reason not to.
-- Prefer small modules with clear responsibilities.
-- Restore the terminal safely on normal exit and errors.
-- Keep UI rendering separate from task/business logic.
-- Avoid unnecessary dependencies; explain why each dependency is used.
-- Add unit tests for task logic and integration tests where appropriate.
-- Run the following before completing a milestone:
-
-```bash
-cargo fmt --check
-cargo clippy --all-targets -- -D warnings
-cargo test
-cargo build
-```
-
-- Do not commit `target/`, credentials, API tokens, personal data or local runtime files.
+- Use stable Rust and keep modules focused.
+- Separate UI, application state, domain logic and persistence.
+- Never silently discard user data.
+- Handle database and terminal errors clearly.
+- Add tests for core behavior and persistence.
+- Run `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` and `cargo build` before completing milestones.
+- Never commit credentials, personal data, runtime database files or `target/`.
 
 ## Progress
 
-- [x] Define TaskFlow scope and features.
-- [x] Document implementation milestones.
+- [x] Define the product scope and release direction.
 - [ ] Initialize the Rust application.
-- [ ] Implement the terminal foundation.
-- [ ] Build the task management interface.
-- [ ] Implement task operations and persistence.
-- [ ] Add tests and complete documentation.
+- [ ] Implement terminal lifecycle and event loop.
+- [ ] Build the first dashboard.
+- [ ] Implement task and project operations.
+- [ ] Add SQLite persistence.
+- [ ] Add search, filters and sorting.
+- [ ] Add tests, recovery and user documentation.
 
 ## License
 
