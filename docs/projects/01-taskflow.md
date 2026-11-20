@@ -18,10 +18,10 @@ TaskFlow is intended for real everyday use. It should make capturing, organizing
 - [ ] Created and updated timestamps.
 
 ### Projects and Inbox
-- [ ] Create, rename and delete projects.
-- [ ] Assign tasks to projects.
-- [ ] Keep unassigned tasks in the Inbox.
-- [ ] Never silently delete tasks when a project is deleted.
+- [x] Create, rename and delete projects (in-memory).
+- [x] Assign tasks to projects.
+- [x] Keep unassigned tasks in the Inbox.
+- [x] Move a project's tasks to Inbox when that project is deleted.
 
 ### Finding and reviewing
 - [ ] Search titles and descriptions.
@@ -81,9 +81,9 @@ Task CRUD is currently in-memory only. SQLite persistence is not yet implemented
 
 1. **Terminal foundation:** Ratatui/Crossterm setup, event loop, quit handling and best-effort cleanup are implemented. Local compilation and manual resize/cleanup verification remain.
 2. **First dashboard:** header summary, selectable task list, details panel, shortcut footer and sample tasks are implemented. Empty-state polish and manual resize verification remain.
-3. **Domain model:** Task, status and priority types, state cycling and transition unit tests are implemented. Project model and assignment remain.
+3. **Domain model:** Task, status, priority and project types are implemented. Projects can be created, renamed and deleted; tasks can be assigned across projects and Inbox. Project deletion moves tasks to Inbox.
 4. **SQLite storage:** schema, versioning, repositories, transactions and persistence tests.
-5. **Task workflows:** in-memory create/edit/delete forms, status and priority cycling are implemented. Due dates and project assignment remain.
+5. **Task workflows:** in-memory create/edit/delete forms, status and priority cycling, and project assignment are implemented. Due dates remain.
 6. **Search and review:** filters, sorting, dashboard counts, upcoming and overdue tasks.
 7. **Release readiness:** error handling, recovery checks, tests and user documentation.
 
