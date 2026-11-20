@@ -132,18 +132,18 @@ Use foreign keys and database transactions. Project deletion must never silently
 - [ ] Verify compilation and manually test terminal resize/cleanup locally.
 
 ### Milestone 2 — First dashboard
-- [ ] Header with application name and summary.
-- [ ] Main task list with selection.
-- [ ] Footer with keyboard shortcuts.
-- [ ] Sample in-memory tasks initially.
-- [ ] Empty state and resize handling.
+- [x] Header with application name and task summary.
+- [x] Main task list with selection and details panel.
+- [x] Footer with keyboard shortcuts.
+- [x] Sample in-memory tasks initially.
+- [ ] Empty-state polish and manual resize verification.
 
 ### Milestone 3 — Domain model
-- [ ] Define Task, TaskStatus and Priority.
+- [x] Define Task, TaskStatus and Priority.
 - [ ] Define Project.
-- [ ] Implement task state transitions.
+- [x] Implement task status and priority cycling.
+- [x] Add unit tests for status and priority transitions.
 - [ ] Implement project assignment and Inbox behavior.
-- [ ] Add unit tests independent of the UI.
 
 ### Milestone 4 — SQLite storage
 - [ ] Add SQLite connection and schema initialization.
