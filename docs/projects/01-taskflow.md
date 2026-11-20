@@ -11,9 +11,9 @@ TaskFlow is intended for real everyday use. It should make capturing, organizing
 ## Release 1 features
 
 ### Tasks
-- [ ] Create, view, edit and delete tasks.
-- [ ] Status: Todo, In Progress, Done.
-- [ ] Priority: Low, Normal, High, Urgent.
+- [x] Create, view, edit and delete tasks (in-memory implementation).
+- [x] Status: Todo, In Progress, Done.
+- [x] Priority: Low, Normal, High, Urgent.
 - [ ] Optional due date and description.
 - [ ] Created and updated timestamps.
 
@@ -33,7 +33,8 @@ TaskFlow is intended for real everyday use. It should make capturing, organizing
 ### Reliability
 - [ ] Local SQLite database.
 - [ ] Versioned schema.
-- [ ] Input validation and useful error messages.
+- [x] Required-title validation and useful status messages.
+- [ ] Persistent storage and recovery.
 - [ ] Tests for domain logic and persistence.
 - [ ] Terminal restoration on normal exit and errors.
 
@@ -62,13 +63,27 @@ Cloud synchronization, accounts, collaboration, calendar synchronization, AI fea
 
 Task changes are currently in memory only and are lost when the application exits. More shortcuts will be added as task workflows are implemented.
 
+## Current task CRUD controls
+
+| Key | Action |
+|---|---|
+| `a` | Add task |
+| `e` | Edit selected task |
+| `d` | Request deletion; confirm with `y` or cancel with `n` |
+| `Tab` | Switch between title and description |
+| `Enter` | Move to description or save |
+| `Ctrl+U` | Clear the active field |
+| `Esc` | Cancel the form |
+
+Task CRUD is currently in-memory only. SQLite persistence is not yet implemented.
+
 ## Implementation milestones
 
 1. **Terminal foundation:** Ratatui/Crossterm setup, event loop, quit handling and best-effort cleanup are implemented. Local compilation and manual resize/cleanup verification remain.
 2. **First dashboard:** header summary, selectable task list, details panel, shortcut footer and sample tasks are implemented. Empty-state polish and manual resize verification remain.
 3. **Domain model:** Task, status and priority types, state cycling and transition unit tests are implemented. Project model and assignment remain.
 4. **SQLite storage:** schema, versioning, repositories, transactions and persistence tests.
-5. **Task workflows:** forms, CRUD, status, priority, dates and project assignment.
+5. **Task workflows:** in-memory create/edit/delete forms, status and priority cycling are implemented. Due dates and project assignment remain.
 6. **Search and review:** filters, sorting, dashboard counts, upcoming and overdue tasks.
 7. **Release readiness:** error handling, recovery checks, tests and user documentation.
 
