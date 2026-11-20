@@ -659,8 +659,6 @@ fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
             Line::from("m           Cycle task assignment through projects and Inbox"),
             Line::from("s           Cycle task status"),
             Line::from("p           Cycle task priority"),
-            Line::from("s           Cycle task status"),
-            Line::from("p           Cycle task priority"),
             Line::from("?           Close this help"),
             Line::from("q / Esc     Quit TaskFlow"),
             Line::from(""),
@@ -706,8 +704,9 @@ fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
 
     let mut project_items = vec![ListItem::new("Inbox")];
     project_items.extend(app.projects.iter().map(|project| ListItem::new(project.name.as_str())));
+    let project_title = if app.focus == Focus::Projects { " Projects * " } else { " Projects " };
     let project_list = List::new(project_items)
-        .block(Block::default().title(" Projects ").borders(Borders::ALL))
+        .block(Block::default().title(project_title).borders(Borders::ALL))
         .highlight_style(Style::default().bg(Color::DarkGray).add_modifier(Modifier::BOLD))
         .highlight_symbol("» ");
     let mut project_state = ListState::default();
@@ -746,10 +745,15 @@ fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
     let selected_project_name = if app.selected_project == 0 { "Inbox" } else {
         app.projects.get(app.selected_project - 1).map(|p| p.name.as_str()).unwrap_or("Projects")
     };
+    let task_title = if app.focus == Focus::Tasks {
+        format!(" {selected_project_name} ({}) * ", visible_indices.len())
+    } else {
+        format!(" {selected_project_name} ({}) ", visible_indices.len())
+    };
     let tasks = List::new(task_items)
         .block(
             Block::default()
-                .title(format!(" {selected_project_name} ({}) ", visible_indices.len()))
+                .title(task_title)
                 .borders(Borders::ALL),
         )
         .highlight_style(
