@@ -2,9 +2,13 @@
 
 A keyboard-driven terminal task manager built with Rust and Ratatui.
 
+**Dedicated repository:** https://github.com/kakzctl/taskflowtui
+
+This repository contains TaskFlow only. Every other application in the broader Ratatui project series will be developed in its own separate repository.
+
 ## Goal
 
-Use TaskFlow to learn the reusable foundation for the remaining TUI projects: terminal lifecycle, event handling, application state, rendering, domain models, persistence and testing.
+Learn the core Ratatui application pattern: terminal lifecycle, event handling, application state, rendering, domain models, persistence and testing.
 
 ## Planned features
 
@@ -75,7 +79,6 @@ Shortcuts may be adjusted as the interface is implemented.
 - [ ] Run formatting, Clippy and tests.
 - [ ] Test keyboard behavior and terminal restoration.
 - [ ] Document installation, usage and shortcuts.
-- [ ] Mark TaskFlow complete in the root README.
 
 ## Proposed module structure
 
@@ -102,9 +105,7 @@ We will introduce modules gradually rather than creating empty files upfront.
 - `crossterm`: terminal events and backend.
 - `serde` with derive: data serialization.
 - `serde_json`: JSON persistence.
-- `thiserror` or `anyhow`: error handling, selected when implementation needs it.
-
-Avoid adding dependencies until their purpose is clear.
+- An error-handling crate, if it becomes useful.
 
 ## Definition of done
 
