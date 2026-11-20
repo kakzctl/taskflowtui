@@ -270,7 +270,10 @@ fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
 
     let header = Paragraph::new(Line::from(vec![
         Span::styled(" TaskFlow ", Style::default().add_modifier(Modifier::BOLD)),
-        Span::raw("Local-first task manager"),
+        Span::raw(format!(
+            "{active} active / {total} total  |  {}",
+            app.status_message
+        )),
     ]))
     .block(Block::default().borders(Borders::ALL));
 
@@ -392,7 +395,4 @@ fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
     frame.render_widget(header, sections[0]);
     frame.render_widget(footer, sections[2]);
 
-    // Keep the status message visible in the terminal title area without
-    // taking space away from the task list.
-    let _ = (active, &app.status_message);
 }
