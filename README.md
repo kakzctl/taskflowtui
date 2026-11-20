@@ -14,13 +14,38 @@ After the package is published:
 cargo install taskflowtui
 ```
 
-### Linux packages
+### Debian and Ubuntu
 
-Download a matching `.deb` or `.rpm` package from GitHub Releases. Arch Linux users can build with `packaging/arch/PKGBUILD`.
+Download the `.deb` package from [GitHub Releases](https://github.com/kakzctl/taskflowtui/releases), then install it with your system package manager.
+
+### Fedora, RHEL and openSUSE
+
+Download the `.rpm` package from [GitHub Releases](https://github.com/kakzctl/taskflowtui/releases), then install it with your system package manager.
+
+### Arch Linux
+
+The repository includes a PKGBUILD:
+
+```sh
+cd packaging/arch
+makepkg -si
+```
+
+Update `pkgver` in the PKGBUILD and regenerate `.SRCINFO` when preparing a new version for an AUR submission.
 
 ### Prebuilt binaries
 
 Download the archive for your operating system and architecture from GitHub Releases, extract it, and place the `taskflowtui` binary somewhere on your `PATH`.
+
+## Publishing to crates.io
+
+The repository includes a manually triggered GitHub Actions workflow named **Publish to crates.io**. Before using it:
+
+1. Create a crates.io API token.
+2. Add it to the GitHub repository as an Actions secret named `CARGO_REGISTRY_TOKEN`.
+3. Run the workflow from the Actions tab and explicitly confirm publication.
+
+The workflow runs `cargo publish --dry-run` before publishing. A published crate version cannot be reused, so update the package version in `Cargo.toml` before each release.
 
 ## Build from source
 
