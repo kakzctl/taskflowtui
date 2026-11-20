@@ -70,7 +70,7 @@ impl fmt::Display for Priority {
 }
 
 /// A task shown in the dashboard.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Task {
     pub id: u32,
     pub title: String,

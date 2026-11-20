@@ -1,11 +1,14 @@
 mod project;
+mod storage;
 mod task;
 
 use std::{
+    error::Error,
     io::{self, Stdout},
     time::Duration,
 };
 
+use directories::ProjectDirs;
 use crossterm::{
     event::{self, Event, KeyCode, KeyEventKind, KeyModifiers},
     execute,
@@ -20,6 +23,7 @@ use ratatui::{
     Terminal,
 };
 use project::Project;
+use storage::Database;
 use task::{Priority, Task, TaskStatus};
 
 type AppTerminal = Terminal<CrosstermBackend<Stdout>>;
@@ -244,6 +248,20 @@ impl App {
             confirm_delete_project: false,
             status_message: "Dashboard loaded with sample tasks.".to_string(),
         }
+    }
+
+    fn from_data(tasks: Vec<Task>, projects: Vec<Project>) -> Self {
+        let mut app = Self::new();
+        app.tasks = tasks;
+        app.projects = projects;
+        app.selected = 0;
+        app.selected_project = 0;
+        app.status_message = format!(
+            "Loaded {} tasks across {} projects.",
+            app.tasks.len(),
+            app.projects.len()
+        );
+        app
     }
 
     fn visible_task_indices(&self) -> Vec<usize> {
@@ -551,14 +569,27 @@ impl App {
     }
 }
 
-fn main() -> io::Result<()> {
-    let mut terminal = TerminalGuard::new()?;
-    let mut app = App::new();
+fn main() -> Result<(), Box<dyn Error>> {
+    let project_dirs = ProjectDirs::from("com", "kakzctl", "taskflowtui")
+        .ok_or_else(|| io::Error::other("could not determine the application data directory"))?;
+    let database_path = project_dirs.data_dir().join("taskflow.sqlite3");
+    let mut database = Database::open(&database_path)?;
+    let (tasks, projects) = database.load()?;
 
-    run(terminal.terminal(), &mut app)
+    let mut terminal = TerminalGuard::new()?;
+    let mut app = App::from_data(tasks, projects);
+
+    run(terminal.terminal(), &mut app, &mut database)
 }
 
-fn run(terminal: &mut AppTerminal, app: &mut App) -> io::Result<()> {
+fn run(
+    terminal: &mut AppTerminal,
+    app: &mut App,
+    database: &mut Database,
+) -> Result<(), Box<dyn Error>> {
+    let mut dirty = false;
+    let mut save_failed = false;
+
     while !app.should_quit {
         terminal.draw(|frame| render(frame, app))?;
 
@@ -567,9 +598,36 @@ fn run(terminal: &mut AppTerminal, app: &mut App) -> io::Result<()> {
         {
             // Ignore key-repeat/release events; handle each press once.
             if key.kind == KeyEventKind::Press {
+                let previous_tasks = app.tasks.clone();
+                let previous_projects = app.projects.clone();
                 app.handle_key(key.code, key.modifiers);
+
+                if app.tasks != previous_tasks || app.projects != previous_projects {
+                    dirty = true;
+                }
             }
         }
+
+        if dirty {
+            match database.save(&app.tasks, &app.projects) {
+                Ok(()) => {
+                    dirty = false;
+                    if save_failed {
+                        app.status_message = "Changes saved successfully.".to_string();
+                    }
+                    save_failed = false;
+                }
+                Err(error) => {
+                    app.status_message = format!("Database save failed; retrying: {error}");
+                    save_failed = true;
+                }
+            }
+        }
+    }
+
+    // Do not silently exit with unsaved changes if the final retry also fails.
+    if dirty {
+        database.save(&app.tasks, &app.projects)?;
     }
 
     Ok(())
