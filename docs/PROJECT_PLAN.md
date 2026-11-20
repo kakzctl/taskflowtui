@@ -146,12 +146,12 @@ Use foreign keys and database transactions. Project deletion must never silently
 - [x] Implement project assignment and Inbox behavior.
 
 ### Milestone 4 — SQLite storage
-- [ ] Add SQLite connection and schema initialization.
-- [ ] Add schema versioning.
-- [ ] Implement task and project repositories.
-- [ ] Use parameterized queries and transactions.
-- [ ] Test create/read/update/delete and restart persistence.
-- [ ] Choose a platform-appropriate application data directory.
+- [x] Add SQLite connection and schema initialization.
+- [x] Add schema versioning.
+- [x] Implement task and project persistence.
+- [x] Use parameterized queries and transactions.
+- [x] Test database round-trips, atomic saves and Inbox preservation.
+- [x] Use the platform-appropriate application data directory via `directories`.
 
 ### Milestone 5 — Interactive task management
 - [x] Create and edit forms for task title and description.
