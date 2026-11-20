@@ -1,3 +1,4 @@
+mod project;
 mod task;
 
 use std::{
@@ -18,6 +19,7 @@ use ratatui::{
     widgets::{Block, Borders, Clear, List, ListItem, ListState, Paragraph, Wrap},
     Terminal,
 };
+use project::Project;
 use task::{Priority, Task, TaskStatus};
 
 type AppTerminal = Terminal<CrosstermBackend<Stdout>>;
@@ -127,6 +129,38 @@ impl TaskForm {
     }
 }
 
+#[derive(Debug, Clone)]
+struct ProjectForm {
+    editing_id: Option<u32>,
+    name: String,
+}
+
+impl ProjectForm {
+    fn new() -> Self {
+        Self { editing_id: None, name: String::new() }
+    }
+
+    fn from_project(project: &Project) -> Self {
+        Self { editing_id: Some(project.id), name: project.name.clone() }
+    }
+
+    fn handle_key(&mut self, code: KeyCode) -> FormAction {
+        match code {
+            KeyCode::Esc => FormAction::Cancel,
+            KeyCode::Enter => FormAction::Save,
+            KeyCode::Backspace => { self.name.pop(); FormAction::Continue }
+            KeyCode::Char(ch) if !ch.is_control() => { self.name.push(ch); FormAction::Continue }
+            _ => FormAction::Continue,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Focus {
+    Projects,
+    Tasks,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum FormAction {
     Continue,
@@ -136,11 +170,16 @@ enum FormAction {
 
 struct App {
     tasks: Vec<Task>,
+    projects: Vec<Project>,
     selected: usize,
+    selected_project: usize,
+    focus: Focus,
     should_quit: bool,
     show_help: bool,
     form: Option<TaskForm>,
+    project_form: Option<ProjectForm>,
     confirm_delete: bool,
+    confirm_delete_project: bool,
     status_message: String,
 }
 
@@ -189,13 +228,40 @@ impl App {
                     Priority::Normal,
                 ),
             ],
+            projects: vec![
+                Project::new(1, "Learning"),
+                Project::new(2, "TaskFlow"),
+                Project::new(3, "Personal"),
+            ],
             selected: 0,
+            selected_project: 0,
+            focus: Focus::Tasks,
             should_quit: false,
             show_help: false,
             form: None,
+            project_form: None,
             confirm_delete: false,
+            confirm_delete_project: false,
             status_message: "Dashboard loaded with sample tasks.".to_string(),
         }
+    }
+
+    fn visible_task_indices(&self) -> Vec<usize> {
+        self.tasks.iter().enumerate()
+            .filter_map(|(index, task)| {
+                let matches = if self.selected_project == 0 {
+                    task.project.is_none()
+                } else {
+                    self.projects.get(self.selected_project - 1)
+                        .is_some_and(|project| task.project.as_deref() == Some(project.name.as_str()))
+                };
+                matches.then_some(index)
+            }).collect()
+    }
+
+    fn selected_task_id(&self) -> Option<u32> {
+        let visible = self.visible_task_indices();
+        visible.get(self.selected).map(|&index| self.tasks[index].id)
     }
 
     fn handle_key(&mut self, code: KeyCode, modifiers: KeyModifiers) {
@@ -209,7 +275,6 @@ impl App {
                 form.active_value_mut().clear();
                 return;
             }
-
             match form.handle_key(code) {
                 FormAction::Continue => {}
                 FormAction::Cancel => {
@@ -217,6 +282,34 @@ impl App {
                     self.status_message = "Task form cancelled.".to_string();
                 }
                 FormAction::Save => self.save_form(),
+            }
+            return;
+        }
+
+        if let Some(form) = self.project_form.as_mut() {
+            if code == KeyCode::Char('u') && modifiers.contains(KeyModifiers::CONTROL) {
+                form.name.clear();
+                return;
+            }
+            match form.handle_key(code) {
+                FormAction::Continue => {}
+                FormAction::Cancel => {
+                    self.project_form = None;
+                    self.status_message = "Project form cancelled.".to_string();
+                }
+                FormAction::Save => self.save_project_form(),
+            }
+            return;
+        }
+
+        if self.confirm_delete_project {
+            match code {
+                KeyCode::Char('y') | KeyCode::Char('Y') => self.delete_selected_project(),
+                KeyCode::Char('n') | KeyCode::Char('N') | KeyCode::Esc => {
+                    self.confirm_delete_project = false;
+                    self.status_message = "Project deletion cancelled.".to_string();
+                }
+                _ => {}
             }
             return;
         }
@@ -239,8 +332,39 @@ impl App {
         }
 
         if self.show_help {
-            if code == KeyCode::Char('?') {
-                self.show_help = false;
+            if code == KeyCode::Char('?') { self.show_help = false; }
+            return;
+        }
+
+        if code == KeyCode::Tab {
+            self.focus = match self.focus {
+                Focus::Projects => Focus::Tasks,
+                Focus::Tasks => Focus::Projects,
+            };
+            return;
+        }
+
+        if self.focus == Focus::Projects {
+            match code {
+                KeyCode::Char('j') | KeyCode::Down => {
+                    self.selected_project = (self.selected_project + 1).min(self.projects.len());
+                    self.selected = 0;
+                }
+                KeyCode::Char('k') | KeyCode::Up => {
+                    self.selected_project = self.selected_project.saturating_sub(1);
+                    self.selected = 0;
+                }
+                KeyCode::Char('g') => { self.selected_project = 0; self.selected = 0; }
+                KeyCode::Char('G') => { self.selected_project = self.projects.len(); self.selected = 0; }
+                KeyCode::Char('a') => self.project_form = Some(ProjectForm::new()),
+                KeyCode::Char('e') if self.selected_project > 0 => {
+                    if let Some(project) = self.projects.get(self.selected_project - 1) {
+                        self.project_form = Some(ProjectForm::from_project(project));
+                    }
+                }
+                KeyCode::Char('d') if self.selected_project > 0 => self.confirm_delete_project = true,
+                KeyCode::Char('?') => self.show_help = true,
+                _ => {}
             }
             return;
         }
@@ -248,36 +372,98 @@ impl App {
         match code {
             KeyCode::Char('j') | KeyCode::Down => self.move_selection_down(),
             KeyCode::Char('k') | KeyCode::Up => self.move_selection_up(),
-            KeyCode::Char('g') => {
-                self.selected = 0;
-                self.status_message = "Moved to the first task.".to_string();
-            }
+            KeyCode::Char('g') => { self.selected = 0; self.status_message = "Moved to the first task.".to_string(); }
             KeyCode::Char('G') => {
-                self.selected = self.tasks.len().saturating_sub(1);
+                self.selected = self.visible_task_indices().len().saturating_sub(1);
                 self.status_message = "Moved to the last task.".to_string();
             }
             KeyCode::Char('a') => self.start_create(),
             KeyCode::Char('e') => self.start_edit(),
             KeyCode::Char('d') => {
-                if !self.tasks.is_empty() {
-                    self.confirm_delete = true;
-                }
+                if self.selected_task_id().is_some() { self.confirm_delete = true; }
             }
             KeyCode::Char('s') => self.cycle_selected_status(),
             KeyCode::Char('p') => self.cycle_selected_priority(),
+            KeyCode::Char('m') => self.assign_selected_to_current_project(),
             KeyCode::Char('?') => self.show_help = true,
             _ => {}
         }
     }
 
     fn move_selection_down(&mut self) {
-        if !self.tasks.is_empty() {
-            self.selected = (self.selected + 1).min(self.tasks.len() - 1);
-        }
+        let count = self.visible_task_indices().len();
+        if count > 0 { self.selected = (self.selected + 1).min(count - 1); }
     }
 
     fn move_selection_up(&mut self) {
         self.selected = self.selected.saturating_sub(1);
+    }
+
+    fn save_project_form(&mut self) {
+        let Some(form) = self.project_form.take() else { return; };
+        let name = form.name.trim();
+        if name.is_empty() {
+            self.status_message = "A project name is required.".to_string();
+            self.project_form = Some(form);
+            return;
+        }
+        if self.projects.iter().any(|project| {
+            Some(project.id) != form.editing_id && project.name.eq_ignore_ascii_case(name)
+        }) {
+            self.status_message = "A project with that name already exists.".to_string();
+            self.project_form = Some(form);
+            return;
+        }
+        if let Some(id) = form.editing_id {
+            if let Some(project) = self.projects.iter_mut().find(|project| project.id == id) {
+                let old_name = project.name.clone();
+                project.name = name.to_string();
+                for task in &mut self.tasks {
+                    if task.project.as_deref() == Some(old_name.as_str()) {
+                        task.project = Some(project.name.clone());
+                    }
+                }
+                self.status_message = format!("Renamed project to {name}.");
+            }
+        } else {
+            let id = self.projects.iter().map(|p| p.id).max().unwrap_or(0) + 1;
+            self.projects.push(Project::new(id, name));
+            self.selected_project = self.projects.len();
+            self.selected = 0;
+            self.status_message = format!("Created project {name}.");
+        }
+    }
+
+    fn delete_selected_project(&mut self) {
+        if self.selected_project == 0 { return; }
+        if let Some(project) = self.projects.get(self.selected_project - 1).cloned() {
+            for task in &mut self.tasks {
+                if task.project.as_deref() == Some(project.name.as_str()) {
+                    task.project = None;
+                }
+            }
+            self.projects.remove(self.selected_project - 1);
+            self.selected_project = 0;
+            self.selected = 0;
+            self.status_message = format!("Deleted project {}; its tasks were moved to Inbox.", project.name);
+        }
+        self.confirm_delete_project = false;
+    }
+
+    fn assign_selected_to_current_project(&mut self) {
+        let visible = self.visible_task_indices();
+        let Some(&index) = visible.get(self.selected) else { return; };
+        let project_name = if self.selected_project == 0 {
+            None
+        } else {
+            self.projects.get(self.selected_project - 1).map(|p| p.name.clone())
+        };
+        self.tasks[index].project = project_name.clone();
+        self.status_message = match project_name {
+            Some(name) => format!("Assigned task to {name}."),
+            None => "Moved task to Inbox.".to_string(),
+        };
+        self.selected = 0;
     }
 
     fn start_create(&mut self) {
@@ -285,8 +471,9 @@ impl App {
     }
 
     fn start_edit(&mut self) {
-        if let Some(task) = self.tasks.get(self.selected) {
-            self.form = Some(TaskForm::from_task(task));
+        let visible = self.visible_task_indices();
+        if let Some(&index) = visible.get(self.selected) {
+            self.form = Some(TaskForm::from_task(&self.tasks[index]));
         }
     }
 
@@ -310,11 +497,14 @@ impl App {
             }
         } else {
             let id = self.tasks.iter().map(|task| task.id).max().unwrap_or(0) + 1;
+            let project = if self.selected_project == 0 { None } else {
+                self.projects.get(self.selected_project - 1).map(|p| p.name.clone())
+            };
             self.tasks.push(Task::new(
                 id,
                 title,
                 form.description.trim(),
-                None,
+                project,
                 TaskStatus::Todo,
                 Priority::Normal,
             ));
@@ -324,25 +514,28 @@ impl App {
     }
 
     fn delete_selected(&mut self) {
-        if self.selected < self.tasks.len() {
-            let removed = self.tasks.remove(self.selected);
-            if self.selected >= self.tasks.len() && self.selected > 0 {
-                self.selected -= 1;
-            }
+        let visible = self.visible_task_indices();
+        if let Some(&index) = visible.get(self.selected) {
+            let removed = self.tasks.remove(index);
+            self.selected = self.selected.min(self.visible_task_indices().len().saturating_sub(1));
             self.status_message = format!("Deleted task #{}.", removed.id);
         }
         self.confirm_delete = false;
     }
 
     fn cycle_selected_status(&mut self) {
-        if let Some(task) = self.tasks.get_mut(self.selected) {
+        let visible = self.visible_task_indices();
+        if let Some(&index) = visible.get(self.selected) {
+            let task = &mut self.tasks[index];
             task.status = task.status.next();
             self.status_message = format!("Task status changed to {}.", task.status);
         }
     }
 
     fn cycle_selected_priority(&mut self) {
-        if let Some(task) = self.tasks.get_mut(self.selected) {
+        let visible = self.visible_task_indices();
+        if let Some(&index) = visible.get(self.selected) {
+            let task = &mut self.tasks[index];
             task.priority = task.priority.next();
             self.status_message = format!("Task priority changed to {}.", task.priority);
         }
@@ -400,6 +593,26 @@ fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
         render_task_form(frame, area, form);
         return;
     }
+    if let Some(form) = &app.project_form {
+        render_project_form(frame, area, form);
+        return;
+    }
+
+    if app.confirm_delete_project {
+        let popup = centered_rect(area, 60, 8);
+        frame.render_widget(Clear, popup);
+        let name = app.projects.get(app.selected_project.saturating_sub(1))
+            .map(|p| p.name.as_str()).unwrap_or("selected project");
+        let message = Paragraph::new(vec![
+            Line::from(format!("Delete project {name}?")),
+            Line::from("Its tasks will be moved to Inbox, not deleted."),
+            Line::from(""),
+            Line::from("y Confirm    n / Esc Cancel"),
+        ]).block(Block::default().title(" Confirm project deletion ").borders(Borders::ALL))
+          .wrap(Wrap { trim: true });
+        frame.render_widget(message, popup);
+        return;
+    }
 
     if app.confirm_delete {
         let popup = centered_rect(area, 52, 7);
@@ -431,9 +644,12 @@ fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
             Line::from("k / ↑       Move up"),
             Line::from("g           First task"),
             Line::from("G           Last task"),
-            Line::from("a           Add task"),
-            Line::from("e           Edit selected task"),
-            Line::from("d           Delete selected task"),
+            Line::from("Tab         Switch Projects / Tasks"),
+            Line::from("Projects: a add, e rename, d delete"),
+            Line::from("Tasks: a add, e edit, d delete"),
+            Line::from("m           Move task to selected project / Inbox"),
+            Line::from("s           Cycle task status"),
+            Line::from("p           Cycle task priority"),
             Line::from("s           Cycle task status"),
             Line::from("p           Cycle task priority"),
             Line::from("?           Close this help"),
@@ -476,12 +692,21 @@ fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
 
     let panels = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(62), Constraint::Percentage(38)])
+        .constraints([Constraint::Percentage(22), Constraint::Percentage(43), Constraint::Percentage(35)])
         .split(sections[1]);
 
-    let task_items: Vec<ListItem<'_>> = app
-        .tasks
-        .iter()
+    let mut project_items = vec![ListItem::new("Inbox")];
+    project_items.extend(app.projects.iter().map(|project| ListItem::new(project.name.as_str())));
+    let project_list = List::new(project_items)
+        .block(Block::default().title(" Projects ").borders(Borders::ALL))
+        .highlight_style(Style::default().bg(Color::DarkGray).add_modifier(Modifier::BOLD))
+        .highlight_symbol("» ");
+    let mut project_state = ListState::default();
+    project_state.select(Some(app.selected_project));
+    frame.render_stateful_widget(project_list, panels[0], &mut project_state);
+
+    let visible_indices = app.visible_task_indices();
+    let task_items: Vec<ListItem<'_>> = visible_indices.iter().map(|&index| &app.tasks[index])
         .map(|task| {
             let status_color = match task.status {
                 TaskStatus::Todo => Color::Gray,
@@ -509,10 +734,13 @@ fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
         })
         .collect();
 
+    let selected_project_name = if app.selected_project == 0 { "Inbox" } else {
+        app.projects.get(app.selected_project - 1).map(|p| p.name.as_str()).unwrap_or("Projects")
+    };
     let tasks = List::new(task_items)
         .block(
             Block::default()
-                .title(format!(" Tasks ({total}) "))
+                .title(format!(" {selected_project_name} ({}) ", visible_indices.len()))
                 .borders(Borders::ALL),
         )
         .highlight_style(
@@ -523,12 +751,13 @@ fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
         .highlight_symbol("» ");
 
     let mut list_state = ListState::default();
-    if !app.tasks.is_empty() {
+    if !visible_indices.is_empty() {
         list_state.select(Some(app.selected));
     }
-    frame.render_stateful_widget(tasks, panels[0], &mut list_state);
+    frame.render_stateful_widget(tasks, panels[1], &mut list_state);
 
-    let details = if let Some(task) = app.tasks.get(app.selected) {
+    let details = if let Some(&task_index) = visible_indices.get(app.selected) {
+        let task = &app.tasks[task_index];
         vec![
             Line::from(Span::styled(
                 task.title.as_str(),
@@ -565,7 +794,7 @@ fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
     let details = Paragraph::new(details)
         .block(Block::default().title(" Details ").borders(Borders::ALL))
         .wrap(Wrap { trim: true });
-    frame.render_widget(details, panels[1]);
+    frame.render_widget(details, panels[2]);
 
     let footer = Paragraph::new(Line::from(vec![
         Span::styled(" j/k ", Style::default().fg(Color::Cyan)),
@@ -576,6 +805,8 @@ fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
         Span::raw("Edit  "),
         Span::styled("d ", Style::default().fg(Color::Cyan)),
         Span::raw("Delete  "),
+        Span::styled("m ", Style::default().fg(Color::Cyan)),
+        Span::raw("Move  "),
         Span::styled("s ", Style::default().fg(Color::Cyan)),
         Span::raw("Status  "),
         Span::styled("p ", Style::default().fg(Color::Cyan)),
@@ -646,9 +877,75 @@ fn render_task_form(frame: &mut ratatui::Frame<'_>, area: Rect, form: &TaskForm)
 }
 
 
+
+fn render_project_form(frame: &mut ratatui::Frame<'_>, area: Rect, form: &ProjectForm) {
+    let popup = centered_rect(area, 58, 8);
+    frame.render_widget(Clear, popup);
+    let title = if form.editing_id.is_some() { " Rename project " } else { " New project " };
+    let layout = Layout::default().direction(Direction::Vertical).margin(1)
+        .constraints([Constraint::Length(1), Constraint::Length(3), Constraint::Length(1)]).split(popup);
+    let input = Paragraph::new(form.name.as_str())
+        .style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))
+        .block(Block::default().title("Name *").borders(Borders::ALL));
+    frame.render_widget(Block::default().title(title).borders(Borders::ALL), popup);
+    frame.render_widget(Paragraph::new("Enter: save  Ctrl+U: clear  Esc: cancel"), layout[0]);
+    frame.render_widget(input, layout[1]);
+    frame.render_widget(Paragraph::new("Project names must be unique."), layout[2]);
+}
+
+    #[test]
+    fn project_creation_rejects_duplicate_names_case_insensitively() {
+        let mut app = App::new();
+        app.project_form = Some(ProjectForm { editing_id: None, name: "learning".into() });
+        app.save_project_form();
+        assert_eq!(app.projects.len(), 3);
+        assert!(app.project_form.is_some());
+        assert_eq!(app.status_message, "A project with that name already exists.");
+    }
+
+    #[test]
+    fn renaming_project_updates_task_assignments() {
+        let mut app = App::new();
+        app.project_form = Some(ProjectForm { editing_id: Some(2), name: "Development".into() });
+        app.save_project_form();
+        assert!(app.tasks.iter().filter(|t| t.project.as_deref() == Some("Development")).count() > 0);
+        assert!(!app.tasks.iter().any(|t| t.project.as_deref() == Some("TaskFlow")));
+    }
+
+    #[test]
+    fn deleting_project_moves_its_tasks_to_inbox() {
+        let mut app = App::new();
+        app.selected_project = 2;
+        app.confirm_delete_project = true;
+        app.delete_selected_project();
+        assert!(!app.projects.iter().any(|p| p.name == "TaskFlow"));
+        assert!(app.tasks.iter().filter(|t| t.project.is_none()).count() >= 2);
+        assert_eq!(app.selected_project, 0);
+    }
+
+    #[test]
+    fn task_creation_uses_selected_project() {
+        let mut app = App::new();
+        app.selected_project = 1;
+        let mut form = TaskForm::new();
+        form.title = "Study ownership".into();
+        app.form = Some(form);
+        app.save_form();
+        assert_eq!(app.tasks.last().unwrap().project.as_deref(), Some("Learning"));
+    }
+
+    #[test]
+    fn tab_switches_between_project_and_task_navigation() {
+        let mut app = App::new();
+        app.handle_key(KeyCode::Tab, KeyModifiers::NONE);
+        assert_eq!(app.focus, Focus::Projects);
+        app.handle_key(KeyCode::Tab, KeyModifiers::NONE);
+        assert_eq!(app.focus, Focus::Tasks);
+    }
+
 #[cfg(test)]
 mod tests {
-    use super::{App, TaskForm};
+    use super::{App, Focus, ProjectForm, TaskForm};
     use crossterm::event::{KeyCode, KeyModifiers};
     use crate::task::{Priority, TaskStatus};
 
