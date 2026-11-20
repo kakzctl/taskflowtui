@@ -7,17 +7,17 @@ arch=('x86_64')
 url="https://github.com/kakzctl/taskflowtui"
 license=('MIT' 'Apache-2.0')
 depends=('gcc-libs' 'glibc')
-makedepends=('cargo')
-source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
+makedepends=('cargo' 'git')
+source=("git+$url.git#tag=v$pkgver")
 sha256sums=('SKIP')
 
 build() {
-  cd "$pkgname-$pkgver"
+  cd "$pkgname"
   cargo build --release --locked
 }
 
 package() {
-  cd "$pkgname-$pkgver"
+  cd "$pkgname"
   install -Dm755 target/release/taskflowtui "$pkgdir/usr/bin/taskflowtui"
   install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
   install -Dm644 LICENSE-MIT "$pkgdir/usr/share/licenses/$pkgname/LICENSE-MIT"
