@@ -49,7 +49,22 @@ Requirements: a recent stable Rust toolchain and Cargo.
 cargo run
 ```
 
-Press `q`, `Esc` or `Ctrl+C` to exit the initial screen.
+The current dashboard uses sample tasks held in memory. Changes are not saved yet.
+
+### Dashboard controls
+
+| Key | Action |
+| --- | --- |
+| `j` / `↓` | Move down |
+| `k` / `↑` | Move up |
+| `g` | Select the first task |
+| `G` | Select the last task |
+| `s` | Cycle the selected task's status |
+| `p` | Cycle the selected task's priority |
+| `?` | Open keyboard help |
+| `q` / `Esc` / `Ctrl+C` | Quit |
+
+The dashboard is an early milestone: task creation, editing and SQLite persistence are not implemented yet.
 
 ## Development approach
 
@@ -85,8 +100,8 @@ cd taskflowtui
 - [x] Define the product scope and release direction.
 - [ ] Initialize the Rust application.
 - [ ] Implement terminal lifecycle and event loop.
-- [ ] Build the first dashboard.
-- [ ] Implement task and project operations.
+- [x] Build the first in-memory dashboard with Vim-style navigation.
+- [ ] Implement task creation, editing and project operations.
 - [ ] Add SQLite persistence.
 - [ ] Add search, filters and sorting.
 - [ ] Add tests, recovery and user documentation.
