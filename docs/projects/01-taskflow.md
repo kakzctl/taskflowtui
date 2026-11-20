@@ -18,10 +18,10 @@ TaskFlow is intended for real everyday use. It should make capturing, organizing
 - [ ] Created and updated timestamps.
 
 ### Projects and Inbox
-- [ ] Create, rename and delete projects.
-- [ ] Assign tasks to projects.
-- [ ] Keep unassigned tasks in the Inbox.
-- [ ] Never silently delete tasks when a project is deleted.
+- [x] Create, rename and delete projects (in-memory).
+- [x] Assign tasks to projects.
+- [x] Keep unassigned tasks in the Inbox.
+- [x] Move a project's tasks to Inbox when that project is deleted.
 
 ### Finding and reviewing
 - [ ] Search titles and descriptions.
@@ -59,9 +59,11 @@ Cloud synchronization, accounts, collaboration, calendar synchronization, AI fea
 | `G` | Select last task |
 | `s` | Cycle selected task status |
 | `p` | Cycle selected task priority |
+| `Tab` | Switch focus between Projects and Tasks |
+| `m` | Cycle selected task through projects and Inbox |
 | `?` | Show or close keyboard help |
 
-Task changes are currently in memory only and are lost when the application exits. More shortcuts will be added as task workflows are implemented.
+Use `Tab` to switch focus. In Projects, use `j/k` to select Inbox or a project, `a` to add, `e` to rename and `d` to delete (confirm with `y`). Deleting a project moves its tasks to Inbox. In Tasks, `m` cycles the selected task through the projects and Inbox. Task and project changes are currently in memory only and are lost when the application exits.
 
 ## Current task CRUD controls
 
@@ -81,9 +83,9 @@ Task CRUD is currently in-memory only. SQLite persistence is not yet implemented
 
 1. **Terminal foundation:** Ratatui/Crossterm setup, event loop, quit handling and best-effort cleanup are implemented. Local compilation and manual resize/cleanup verification remain.
 2. **First dashboard:** header summary, selectable task list, details panel, shortcut footer and sample tasks are implemented. Empty-state polish and manual resize verification remain.
-3. **Domain model:** Task, status and priority types, state cycling and transition unit tests are implemented. Project model and assignment remain.
+3. **Domain model:** Task, status, priority and project types are implemented. Projects can be created, renamed and deleted; tasks can be assigned across projects and Inbox. Project deletion moves tasks to Inbox.
 4. **SQLite storage:** schema, versioning, repositories, transactions and persistence tests.
-5. **Task workflows:** in-memory create/edit/delete forms, status and priority cycling are implemented. Due dates and project assignment remain.
+5. **Task workflows:** in-memory create/edit/delete forms, status and priority cycling, and project assignment are implemented. Due dates remain.
 6. **Search and review:** filters, sorting, dashboard counts, upcoming and overdue tasks.
 7. **Release readiness:** error handling, recovery checks, tests and user documentation.
 

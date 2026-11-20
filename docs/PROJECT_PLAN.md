@@ -140,10 +140,10 @@ Use foreign keys and database transactions. Project deletion must never silently
 
 ### Milestone 3 — Domain model
 - [x] Define Task, TaskStatus and Priority.
-- [ ] Define Project.
+- [x] Define Project.
 - [x] Implement task status and priority cycling.
 - [x] Add unit tests for status and priority transitions.
-- [ ] Implement project assignment and Inbox behavior.
+- [x] Implement project assignment and Inbox behavior.
 
 ### Milestone 4 — SQLite storage
 - [ ] Add SQLite connection and schema initialization.
@@ -158,7 +158,7 @@ Use foreign keys and database transactions. Project deletion must never silently
 - [x] Delete confirmation.
 - [x] Completion/status and priority changes.
 - [ ] Due-date editing.
-- [ ] Project creation and assignment.
+- [x] Project creation and assignment.
 - [x] Required-title validation and status feedback.
 - [x] Unit tests for create, edit, validation and delete workflows.
 

@@ -21,6 +21,7 @@ A local-first terminal application for capturing, organizing and tracking everyd
 - Assign Low, Normal, High or Urgent priority.
 - Set optional due dates.
 - Organize tasks into projects, with an Inbox for unassigned tasks.
+- Create, rename and delete projects; deleting a project safely moves its tasks to Inbox.
 - Search tasks and filter by status, priority and project.
 - Sort by priority, due date or creation date.
 - Show dashboard counts and upcoming/overdue tasks.
@@ -64,10 +65,12 @@ The current dashboard uses sample tasks held in memory. Changes are not saved ye
 | `a` | Add a task |
 | `e` | Edit selected task |
 | `d` | Request deletion (confirm with `y`, cancel with `n`) |
+| `Tab` | Switch focus between Projects and Tasks |
+| `m` | Cycle selected task through projects and Inbox |
 | `?` | Open keyboard help |
 | `q` / `Esc` / `Ctrl+C` | Quit |
 
-Task creation, editing and confirmed deletion are now implemented in the task CRUD feature branch. All changes are still held in memory and are lost when the application exits; SQLite persistence is the next milestone.
+Task CRUD and in-memory project organization are implemented. Select Inbox or a project in the Projects panel to filter the task list. Use `Tab` to switch panels; in the Projects panel, `a` adds, `e` renames and `d` deletes a project. Deleting a project moves its tasks to Inbox. In the Tasks panel, `m` cycles a task through the available projects and Inbox. Changes are still held in memory and are lost when the application exits; SQLite persistence is a later milestone.
 
 ## Development approach
 
@@ -104,7 +107,7 @@ cd taskflowtui
 - [ ] Initialize the Rust application.
 - [ ] Implement terminal lifecycle and event loop.
 - [x] Build the first in-memory dashboard with Vim-style navigation.
-- [ ] Implement task creation, editing and project operations.
+- [x] Implement task creation, editing and in-memory project operations.
 - [ ] Add SQLite persistence.
 - [ ] Add search, filters and sorting.
 - [ ] Add tests, recovery and user documentation.
