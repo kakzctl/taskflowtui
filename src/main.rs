@@ -384,7 +384,7 @@ impl App {
             }
             KeyCode::Char('s') => self.cycle_selected_status(),
             KeyCode::Char('p') => self.cycle_selected_priority(),
-            KeyCode::Char('m') => self.assign_selected_to_current_project(),
+            KeyCode::Char('m') => self.cycle_selected_project_assignment(),
             KeyCode::Char('?') => self.show_help = true,
             _ => {}
         }
@@ -450,17 +450,26 @@ impl App {
         self.confirm_delete_project = false;
     }
 
-    fn assign_selected_to_current_project(&mut self) {
+    fn cycle_selected_project_assignment(&mut self) {
         let visible = self.visible_task_indices();
         let Some(&index) = visible.get(self.selected) else { return; };
-        let project_name = if self.selected_project == 0 {
-            None
-        } else {
-            self.projects.get(self.selected_project - 1).map(|p| p.name.clone())
+        let current = self.tasks[index].project.clone();
+        let next = match current.as_deref() {
+            None if !self.projects.is_empty() => Some(self.projects[0].name.clone()),
+            None => None,
+            Some(name) => {
+                let position = self.projects.iter().position(|p| p.name == name);
+                match position {
+                    Some(position) if position + 1 < self.projects.len() => {
+                        Some(self.projects[position + 1].name.clone())
+                    }
+                    _ => None,
+                }
+            }
         };
-        self.tasks[index].project = project_name.clone();
-        self.status_message = match project_name {
-            Some(name) => format!("Assigned task to {name}."),
+        self.tasks[index].project = next.clone();
+        self.status_message = match next {
+            Some(name) => format!("Moved task to {name}."),
             None => "Moved task to Inbox.".to_string(),
         };
         self.selected = 0;
@@ -647,7 +656,7 @@ fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
             Line::from("Tab         Switch Projects / Tasks"),
             Line::from("Projects: a add, e rename, d delete"),
             Line::from("Tasks: a add, e edit, d delete"),
-            Line::from("m           Move task to selected project / Inbox"),
+            Line::from("m           Cycle task assignment through projects and Inbox"),
             Line::from("s           Cycle task status"),
             Line::from("p           Cycle task priority"),
             Line::from("s           Cycle task status"),
