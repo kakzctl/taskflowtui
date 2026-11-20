@@ -4,9 +4,28 @@ version = "0.1.0"
 edition = "2024"
 description = "A local-first, keyboard-driven terminal task manager"
 repository = "https://github.com/kakzctl/taskflowtui"
+readme = "README.md"
+license = "MIT OR Apache-2.0"
+keywords = ["terminal", "tui", "task-manager", "ratatui", "productivity"]
+categories = ["command-line-utilities"]
+exclude = [".github/**", "packaging/**"]
 
 [dependencies]
 crossterm = "0.28"
 ratatui = "0.29"
 rusqlite = { version = "0.32", features = ["bundled"] }
 directories = "6"
+
+[package.metadata.deb]
+section = "utils"
+priority = "optional"
+depends = "$auto"
+extended-description = "A local-first terminal task manager with keyboard-driven task and project management."
+
+[package.metadata.generate-rpm]
+assets = [
+    { source = "target/release/taskflowtui", dest = "/usr/bin/taskflowtui", mode = "755" },
+    { source = "README.md", dest = "/usr/share/doc/taskflowtui/README.md", mode = "644" },
+    { source = "LICENSE-MIT", dest = "/usr/share/licenses/taskflowtui/LICENSE-MIT", mode = "644" },
+    { source = "LICENSE-APACHE", dest = "/usr/share/licenses/taskflowtui/LICENSE-APACHE", mode = "644" },
+]
