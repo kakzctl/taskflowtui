@@ -123,12 +123,13 @@ Use foreign keys and database transactions. Project deletion must never silently
 ## 7. Implementation milestones
 
 ### Milestone 1 — Terminal foundation
-- [ ] Create the Rust binary crate.
-- [ ] Add Ratatui and Crossterm.
-- [ ] Initialize raw mode and alternate screen.
-- [ ] Implement the draw/event loop.
-- [ ] Handle quit and terminal resize.
-- [ ] Restore terminal state on errors and normal exit.
+- [x] Create the Rust binary crate.
+- [x] Add Ratatui and Crossterm.
+- [x] Initialize raw mode and alternate screen.
+- [x] Implement the draw/event loop.
+- [x] Handle quit input.
+- [x] Add best-effort terminal restoration on errors and normal exit.
+- [ ] Verify compilation and manually test terminal resize/cleanup locally.
 
 ### Milestone 2 — First dashboard
 - [ ] Header with application name and summary.
